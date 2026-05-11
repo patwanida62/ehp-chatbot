@@ -1,0 +1,565 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Quick Start Guide — EHP LINE Chatbot</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Segoe UI', sans-serif; background: #f5f7fa; color: #333; line-height: 1.6; }
+
+    header {
+      background: linear-gradient(135deg, #06c755, #05a847);
+      color: white; padding: 40px 48px;
+    }
+    header h1 { font-size: 26px; font-weight: 700; margin-bottom: 6px; }
+    header p  { font-size: 14px; opacity: 0.85; }
+    .meta { display: flex; gap: 12px; margin-top: 16px; flex-wrap: wrap; }
+    .meta span {
+      background: rgba(255,255,255,0.2); padding: 4px 14px;
+      border-radius: 99px; font-size: 12px; font-weight: 600;
+    }
+
+    .container { max-width: 860px; margin: 0 auto; padding: 40px 24px 60px; }
+
+    /* Progress bar */
+    .progress-bar {
+      display: flex; align-items: center; gap: 0;
+      margin-bottom: 40px; overflow-x: auto; padding-bottom: 8px;
+    }
+    .prog-step {
+      display: flex; flex-direction: column; align-items: center;
+      min-width: 90px; cursor: default;
+    }
+    .prog-circle {
+      width: 36px; height: 36px; border-radius: 50%;
+      background: #e0e0e0; color: #999;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 14px; font-weight: 700; transition: all 0.3s;
+      position: relative; z-index: 1;
+    }
+    .prog-circle.done   { background: #06c755; color: white; }
+    .prog-circle.active { background: #06c755; color: white; box-shadow: 0 0 0 4px #b8f0cd; }
+    .prog-label { font-size: 11px; color: #888; margin-top: 6px; text-align: center; white-space: nowrap; }
+    .prog-line {
+      flex: 1; height: 3px; background: #e0e0e0;
+      min-width: 20px; transition: background 0.3s;
+    }
+    .prog-line.done { background: #06c755; }
+
+    /* Steps */
+    .steps { display: flex; flex-direction: column; gap: 24px; }
+
+    .step-card {
+      background: white; border-radius: 14px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.07);
+      overflow: hidden; transition: box-shadow 0.2s;
+    }
+    .step-card:hover { box-shadow: 0 4px 20px rgba(0,0,0,0.12); }
+
+    .step-header {
+      display: flex; align-items: center; gap: 16px;
+      padding: 18px 24px; border-bottom: 1px solid #f0f0f0;
+      cursor: pointer; user-select: none;
+    }
+    .step-num {
+      width: 40px; height: 40px; border-radius: 50%;
+      background: #e8f8ee; color: #06c755;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 16px; font-weight: 800; flex-shrink: 0;
+    }
+    .step-title { flex: 1; }
+    .step-title h3 { font-size: 16px; font-weight: 700; color: #1a1a1a; }
+    .step-title p  { font-size: 13px; color: #888; margin-top: 2px; }
+    .step-toggle {
+      font-size: 20px; color: #ccc; transition: transform 0.3s;
+    }
+    .step-card.open .step-toggle { transform: rotate(180deg); }
+
+    .step-body { display: none; padding: 24px; }
+    .step-card.open .step-body { display: block; }
+
+    /* Content styles inside step-body */
+    .step-body h4 { font-size: 13px; font-weight: 700; color: #555; text-transform: uppercase;
+      letter-spacing: 0.5px; margin: 18px 0 10px; }
+    .step-body h4:first-child { margin-top: 0; }
+
+    pre {
+      background: #1e1e2e; color: #cdd6f4;
+      border-radius: 10px; padding: 16px 20px;
+      font-size: 13px; font-family: 'Consolas', monospace;
+      overflow-x: auto; margin: 8px 0;
+      position: relative;
+    }
+    .copy-btn {
+      position: absolute; top: 10px; right: 10px;
+      background: rgba(255,255,255,0.1); border: none; color: #cdd6f4;
+      padding: 4px 10px; border-radius: 6px; font-size: 11px;
+      cursor: pointer; transition: background 0.2s;
+    }
+    .copy-btn:hover { background: rgba(255,255,255,0.2); }
+    .copy-btn.copied { background: #06c755; color: white; }
+
+    .comment { color: #6c7086; }
+    .cmd     { color: #89b4fa; }
+    .str     { color: #a6e3a1; }
+    .key     { color: #f38ba8; }
+    .val     { color: #fab387; }
+
+    .info-box {
+      background: #e8f8ee; border-left: 4px solid #06c755;
+      border-radius: 0 8px 8px 0; padding: 12px 16px;
+      font-size: 13px; color: #1a5c30; margin: 12px 0;
+    }
+    .warn-box {
+      background: #fff8e1; border-left: 4px solid #f59e0b;
+      border-radius: 0 8px 8px 0; padding: 12px 16px;
+      font-size: 13px; color: #78350f; margin: 12px 0;
+    }
+
+    .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin: 12px 0; }
+    @media (max-width: 600px) { .two-col { grid-template-columns: 1fr; } }
+
+    .terminal-card {
+      background: #1e1e2e; border-radius: 10px; overflow: hidden;
+    }
+    .terminal-bar {
+      background: #313244; padding: 8px 14px;
+      display: flex; align-items: center; gap: 8px;
+    }
+    .terminal-bar .dot {
+      width: 10px; height: 10px; border-radius: 50%;
+    }
+    .terminal-bar .label { color: #6c7086; font-size: 12px; margin-left: auto; }
+    .terminal-body {
+      padding: 16px 20px; font-family: 'Consolas', monospace;
+      font-size: 13px; color: #cdd6f4;
+    }
+    .terminal-body .prompt { color: #89b4fa; }
+    .terminal-body .output { color: #a6e3a1; }
+
+    .file-badge {
+      display: inline-block; background: #f3f4f6;
+      border: 1px solid #e5e7eb; border-radius: 6px;
+      padding: 2px 10px; font-family: 'Consolas', monospace;
+      font-size: 12px; color: #374151;
+    }
+
+    .checklist { list-style: none; display: flex; flex-direction: column; gap: 8px; margin: 12px 0; }
+    .checklist li {
+      display: flex; align-items: flex-start; gap: 10px;
+      font-size: 14px; padding: 10px 14px;
+      background: #f9fafb; border-radius: 8px;
+    }
+    .checklist li .icon { font-size: 16px; flex-shrink: 0; }
+
+    /* Summary table */
+    table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    th {
+      background: #f3f4f6; text-align: left;
+      padding: 10px 16px; font-weight: 700; color: #555;
+    }
+    td { padding: 10px 16px; border-bottom: 1px solid #f0f0f0; }
+    tr:last-child td { border-bottom: none; }
+
+    /* Status badge */
+    .badge {
+      display: inline-block; padding: 2px 10px;
+      border-radius: 99px; font-size: 11px; font-weight: 700;
+    }
+    .badge-green  { background: #d1fae5; color: #065f46; }
+    .badge-blue   { background: #dbeafe; color: #1e40af; }
+    .badge-orange { background: #ffedd5; color: #9a3412; }
+
+    footer {
+      text-align: center; color: #aaa; font-size: 12px;
+      padding: 32px 0; border-top: 1px solid #e5e7eb;
+      margin-top: 40px;
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>🚀 Quick Start Guide — EHP LINE Chatbot</h1>
+  <p>ขั้นตอนการติดตั้งและเริ่มใช้งานระบบ LINE Chatbot เชื่อมต่อ Ticket System</p>
+  <div class="meta">
+    <span>⏱ ใช้เวลาประมาณ 15–30 นาที</span>
+    <span>🟢 สำหรับ Dev Environment</span>
+    <span>📦 Node.js + LINE Messaging API</span>
+  </div>
+</header>
+
+<div class="container">
+
+  <!-- Progress -->
+  <div class="progress-bar">
+    <div class="prog-step">
+      <div class="prog-circle done">1</div>
+      <div class="prog-label">Node.js</div>
+    </div>
+    <div class="prog-line done"></div>
+    <div class="prog-step">
+      <div class="prog-circle done">2</div>
+      <div class="prog-label">Clone Code</div>
+    </div>
+    <div class="prog-line done"></div>
+    <div class="prog-step">
+      <div class="prog-circle done">3</div>
+      <div class="prog-label">npm install</div>
+    </div>
+    <div class="prog-line done"></div>
+    <div class="prog-step">
+      <div class="prog-circle done">4</div>
+      <div class="prog-label">ตั้งค่า .env</div>
+    </div>
+    <div class="prog-line done"></div>
+    <div class="prog-step">
+      <div class="prog-circle done">5</div>
+      <div class="prog-label">รัน Server</div>
+    </div>
+    <div class="prog-line done"></div>
+    <div class="prog-step">
+      <div class="prog-circle done">6</div>
+      <div class="prog-label">ngrok</div>
+    </div>
+    <div class="prog-line done"></div>
+    <div class="prog-step">
+      <div class="prog-circle done">7</div>
+      <div class="prog-label">LINE Console</div>
+    </div>
+    <div class="prog-line done"></div>
+    <div class="prog-step">
+      <div class="prog-circle done">8</div>
+      <div class="prog-label">ทดสอบ</div>
+    </div>
+  </div>
+
+  <div class="steps">
+
+    <!-- Step 1 -->
+    <div class="step-card open">
+      <div class="step-header" onclick="toggle(this)">
+        <div class="step-num">1</div>
+        <div class="step-title">
+          <h3>ติดตั้ง Node.js</h3>
+          <p>ต้องการ Node.js v18 ขึ้นไป</p>
+        </div>
+        <div class="step-toggle">▼</div>
+      </div>
+      <div class="step-body">
+        <h4>ดาวน์โหลด</h4>
+        <div class="info-box">
+          🌐 ไปที่ <strong>https://nodejs.org</strong> → เลือกดาวน์โหลดเวอร์ชัน <strong>LTS (แนะนำ)</strong> → ติดตั้งตามขั้นตอน
+        </div>
+        <h4>ตรวจสอบเวอร์ชัน</h4>
+        <pre><button class="copy-btn" onclick="copyCode(this)">copy</button><span class="cmd">node</span> <span class="str">--version</span>    <span class="comment"># ต้องได้ v18.x.x ขึ้นไป</span>
+<span class="cmd">npm</span>  <span class="str">--version</span>    <span class="comment"># ต้องได้ v9.x.x ขึ้นไป</span></pre>
+      </div>
+    </div>
+
+    <!-- Step 2 -->
+    <div class="step-card open">
+      <div class="step-header" onclick="toggle(this)">
+        <div class="step-num">2</div>
+        <div class="step-title">
+          <h3>Clone Code จาก GitHub</h3>
+          <p>ดึง source code ลงเครื่อง</p>
+        </div>
+        <div class="step-toggle">▼</div>
+      </div>
+      <div class="step-body">
+        <div class="warn-box">
+          ⚠️ ต้องติดตั้ง <strong>Git</strong> ก่อน — ดาวน์โหลดได้ที่ <strong>https://git-scm.com</strong>
+        </div>
+        <pre><button class="copy-btn" onclick="copyCode(this)">copy</button><span class="cmd">git clone</span> <span class="str">https://github.com/patwanida62/ehp-chatbot.git</span>
+<span class="cmd">cd</span> ehp-chatbot</pre>
+        <div class="info-box">
+          📁 Code จะถูกบันทึกไว้ในโฟลเดอร์ <strong>ehp-chatbot</strong> ในที่อยู่ปัจจุบัน
+        </div>
+      </div>
+    </div>
+
+    <!-- Step 3 -->
+    <div class="step-card open">
+      <div class="step-header" onclick="toggle(this)">
+        <div class="step-num">3</div>
+        <div class="step-title">
+          <h3>ติดตั้ง Dependencies</h3>
+          <p>ติดตั้ง package ทั้งหมดที่จำเป็น</p>
+        </div>
+        <div class="step-toggle">▼</div>
+      </div>
+      <div class="step-body">
+        <pre><button class="copy-btn" onclick="copyCode(this)">copy</button><span class="cmd">npm install</span></pre>
+        <div class="info-box">
+          ✅ หลัง install สำเร็จ จะมีโฟลเดอร์ <span class="file-badge">node_modules/</span> เกิดขึ้น
+        </div>
+        <h4>Package ที่ติดตั้ง</h4>
+        <table>
+          <tr><th>Package</th><th>ใช้ทำอะไร</th></tr>
+          <tr><td><span class="file-badge">express</span></td><td>Web server framework</td></tr>
+          <tr><td><span class="file-badge">axios</span></td><td>HTTP client สำหรับเรียก API</td></tr>
+          <tr><td><span class="file-badge">dotenv</span></td><td>อ่านค่าจากไฟล์ .env</td></tr>
+          <tr><td><span class="file-badge">nodemon</span></td><td>Auto-restart เมื่อแก้ไขไฟล์ (dev)</td></tr>
+        </table>
+      </div>
+    </div>
+
+    <!-- Step 4 -->
+    <div class="step-card open">
+      <div class="step-header" onclick="toggle(this)">
+        <div class="step-num">4</div>
+        <div class="step-title">
+          <h3>สร้างไฟล์ .env</h3>
+          <p>ตั้งค่า LINE Token, Secret และ URL</p>
+        </div>
+        <div class="step-toggle">▼</div>
+      </div>
+      <div class="step-body">
+        <div class="warn-box">
+          🔒 ไฟล์ <span class="file-badge">.env</span> เก็บข้อมูลลับ <strong>ห้าม commit ขึ้น GitHub</strong> เด็ดขาด
+        </div>
+        <h4>สร้างไฟล์ .env ในโฟลเดอร์ ehp-chatbot</h4>
+        <pre><button class="copy-btn" onclick="copyCode(this)">copy</button><span class="key">LINE_CHANNEL_ACCESS_TOKEN</span>=<span class="val">ใส่ Token จาก LINE Developers Console</span>
+<span class="key">LINE_CHANNEL_SECRET</span>=<span class="val">ใส่ Channel Secret จาก LINE Developers Console</span>
+<span class="key">TICKET_API_BASE_URL</span>=<span class="val">http://localhost:4000</span>
+<span class="key">PORT</span>=<span class="val">3000</span></pre>
+        <h4>หา Token และ Secret ได้ที่ไหน</h4>
+        <ul class="checklist">
+          <li><span class="icon">1️⃣</span> ไปที่ <strong>developers.line.biz</strong> → เลือก Provider → เลือก Channel</li>
+          <li><span class="icon">2️⃣</span> แท็บ <strong>Basic settings</strong> → คัดลอก <strong>Channel secret</strong></li>
+          <li><span class="icon">3️⃣</span> แท็บ <strong>Messaging API</strong> → คัดลอก <strong>Channel access token</strong></li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- Step 5 -->
+    <div class="step-card open">
+      <div class="step-header" onclick="toggle(this)">
+        <div class="step-num">5</div>
+        <div class="step-title">
+          <h3>รัน Server ทั้ง 2 ตัว</h3>
+          <p>เปิด Terminal 2 หน้าต่างพร้อมกัน</p>
+        </div>
+        <div class="step-toggle">▼</div>
+      </div>
+      <div class="step-body">
+        <div class="two-col">
+          <div>
+            <h4>Terminal 1 — Webhook Bot (port 3000)</h4>
+            <div class="terminal-card">
+              <div class="terminal-bar">
+                <div class="dot" style="background:#ff5f57"></div>
+                <div class="dot" style="background:#ffbd2e"></div>
+                <div class="dot" style="background:#28c840"></div>
+                <span class="label">server.js</span>
+              </div>
+              <div class="terminal-body">
+                <div><span class="prompt">$</span> npm run dev</div>
+                <div class="output">Webhook server running on port 3000</div>
+              </div>
+            </div>
+          </div>
+          <div>
+            <h4>Terminal 2 — Ticket API (port 4000)</h4>
+            <div class="terminal-card">
+              <div class="terminal-bar">
+                <div class="dot" style="background:#ff5f57"></div>
+                <div class="dot" style="background:#ffbd2e"></div>
+                <div class="dot" style="background:#28c840"></div>
+                <span class="label">ticket-api.js</span>
+              </div>
+              <div class="terminal-body">
+                <div><span class="prompt">$</span> npm run ticket-api:dev</div>
+                <div class="output">Ticket API running on port 4000</div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="info-box">
+          ✅ ถ้าเห็นข้อความ "running on port" ในทั้งสอง Terminal แสดงว่า Server ทำงานปกติ
+        </div>
+      </div>
+    </div>
+
+    <!-- Step 6 -->
+    <div class="step-card open">
+      <div class="step-header" onclick="toggle(this)">
+        <div class="step-num">6</div>
+        <div class="step-title">
+          <h3>เปิด ngrok (สำหรับ Dev/Test)</h3>
+          <p>สร้าง HTTPS URL ชั่วคราวเพื่อรับ Webhook จาก LINE</p>
+        </div>
+        <div class="step-toggle">▼</div>
+      </div>
+      <div class="step-body">
+        <div class="warn-box">
+          ⚠️ ต้องดาวน์โหลด ngrok เวอร์ชัน <strong>3.20.0+</strong> จาก <strong>https://ngrok.com/download</strong> และทำการ login ก่อน
+        </div>
+        <h4>เพิ่ม Auth Token (ครั้งแรกครั้งเดียว)</h4>
+        <pre><button class="copy-btn" onclick="copyCode(this)">copy</button><span class="cmd">ngrok config add-authtoken</span> <span class="str">YOUR_NGROK_TOKEN</span></pre>
+        <h4>เปิด Tunnel ไปยัง port 3000</h4>
+        <pre><button class="copy-btn" onclick="copyCode(this)">copy</button><span class="cmd">ngrok http</span> <span class="val">3000</span></pre>
+        <h4>ผลลัพธ์ที่ได้ (ตัวอย่าง)</h4>
+        <div class="terminal-card">
+          <div class="terminal-bar">
+            <div class="dot" style="background:#ff5f57"></div>
+            <div class="dot" style="background:#ffbd2e"></div>
+            <div class="dot" style="background:#28c840"></div>
+          </div>
+          <div class="terminal-body">
+            <div class="output">Forwarding  https://xxxx-xxxx.ngrok-free.app → http://localhost:3000</div>
+          </div>
+        </div>
+        <div class="info-box">
+          📋 คัดลอก URL ส่วน <strong>https://xxxx-xxxx.ngrok-free.app</strong> เพื่อใช้ในขั้นตอนถัดไป
+        </div>
+      </div>
+    </div>
+
+    <!-- Step 7 -->
+    <div class="step-card open">
+      <div class="step-header" onclick="toggle(this)">
+        <div class="step-num">7</div>
+        <div class="step-title">
+          <h3>ตั้งค่า Webhook ใน LINE Developers</h3>
+          <p>เชื่อม LINE OA กับ Bot Server</p>
+        </div>
+        <div class="step-toggle">▼</div>
+      </div>
+      <div class="step-body">
+        <ul class="checklist">
+          <li><span class="icon">1️⃣</span> ไปที่ <strong>developers.line.biz</strong> → เลือก Channel ของคุณ</li>
+          <li><span class="icon">2️⃣</span> แท็บ <strong>Messaging API</strong> → หัวข้อ <strong>Webhook settings</strong></li>
+          <li><span class="icon">3️⃣</span> ใส่ Webhook URL:
+            <pre style="margin-top:8px"><span class="str">https://xxxx-xxxx.ngrok-free.app/webhook/line</span></pre>
+          </li>
+          <li><span class="icon">4️⃣</span> กดปุ่ม <strong>Verify</strong> → ต้องได้ <span class="badge badge-green">Success</span></li>
+          <li><span class="icon">5️⃣</span> เปิด <strong>Use webhook: ON</strong></li>
+        </ul>
+        <div class="warn-box">
+          ⚠️ ใส่ URL ให้ครบถึง <strong>/webhook/line</strong> ด้วย ไม่ใช่แค่ domain เฉยๆ
+        </div>
+      </div>
+    </div>
+
+    <!-- Step 8 -->
+    <div class="step-card open">
+      <div class="step-header" onclick="toggle(this)">
+        <div class="step-num">8</div>
+        <div class="step-title">
+          <h3>ทดสอบระบบ</h3>
+          <p>ตรวจสอบว่าทุกอย่างทำงานถูกต้อง</p>
+        </div>
+        <div class="step-toggle">▼</div>
+      </div>
+      <div class="step-body">
+        <h4>ทดสอบผ่าน LINE</h4>
+        <ul class="checklist">
+          <li><span class="icon">💬</span> พิมพ์ใน LINE: <strong>"แจ้งปัญหา"</strong> หรือ <strong>"เข้าระบบไม่ได้"</strong> → Bot ควรตอบกลับพร้อม Ticket #</li>
+          <li><span class="icon">🔍</span> พิมพ์: <strong>"ตรวจสอบ #1"</strong> → Bot ควรแสดงสถานะ Ticket</li>
+        </ul>
+        <h4>ตรวจสอบ Admin UI</h4>
+        <ul class="checklist">
+          <li><span class="icon">🌐</span> เปิด Browser ไปที่ <strong>http://localhost:4000/admin</strong></li>
+          <li><span class="icon">⚙️</span> แท็บ <strong>Keywords</strong> — จัดการคำที่ทำให้เปิด Ticket อัตโนมัติ</li>
+          <li><span class="icon">📋</span> แท็บ <strong>Settings</strong> — ตั้งค่า Service / Category / SubCategory</li>
+        </ul>
+        <h4>ตรวจสอบ Logs ใน Terminal</h4>
+        <div class="terminal-card">
+          <div class="terminal-bar">
+            <div class="dot" style="background:#ff5f57"></div>
+            <div class="dot" style="background:#ffbd2e"></div>
+            <div class="dot" style="background:#28c840"></div>
+          </div>
+          <div class="terminal-body">
+            <div class="output">[LINE] userId=Uxxxxxxxx | message="แจ้งปัญหา"</div>
+            <div class="output">[TICKET] Auto-created #3 for "ชื่อผู้ใช้" keyword="แจ้งปัญหา"</div>
+          </div>
+        </div>
+        <div class="info-box">
+          🎉 ถ้าเห็น log เหล่านี้ใน Terminal แสดงว่าระบบทำงานสมบูรณ์แล้ว!
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Summary Table -->
+  <div style="margin-top:40px; background:white; border-radius:14px; box-shadow:0 2px 10px rgba(0,0,0,0.07); overflow:hidden;">
+    <div style="padding:18px 24px; border-bottom:1px solid #f0f0f0;">
+      <h3 style="font-size:16px; font-weight:700;">📌 สรุป URL และ Port ที่สำคัญ</h3>
+    </div>
+    <div style="padding:8px 0;">
+      <table>
+        <tr>
+          <th>บริการ</th>
+          <th>URL</th>
+          <th>Port</th>
+          <th>สถานะ</th>
+        </tr>
+        <tr>
+          <td>Webhook Bot</td>
+          <td><span class="file-badge">http://localhost:3000/webhook/line</span></td>
+          <td>3000</td>
+          <td><span class="badge badge-green">ต้องเปิดตลอด</span></td>
+        </tr>
+        <tr>
+          <td>Ticket API</td>
+          <td><span class="file-badge">http://localhost:4000/tickets</span></td>
+          <td>4000</td>
+          <td><span class="badge badge-green">ต้องเปิดตลอด</span></td>
+        </tr>
+        <tr>
+          <td>Admin UI</td>
+          <td><span class="file-badge">http://localhost:4000/admin</span></td>
+          <td>4000</td>
+          <td><span class="badge badge-blue">เปิดเมื่อต้องการ</span></td>
+        </tr>
+        <tr>
+          <td>ngrok Tunnel</td>
+          <td><span class="file-badge">https://xxxx.ngrok-free.app</span></td>
+          <td>—</td>
+          <td><span class="badge badge-orange">เฉพาะ Dev/Test</span></td>
+        </tr>
+      </table>
+    </div>
+  </div>
+
+  <!-- GitHub -->
+  <div style="margin-top:24px; background:#1e1e2e; border-radius:14px; padding:20px 24px; display:flex; align-items:center; gap:16px;">
+    <span style="font-size:28px;">🐙</span>
+    <div>
+      <div style="color:#cdd6f4; font-weight:700; font-size:15px;">Source Code บน GitHub</div>
+      <div style="color:#89b4fa; font-size:13px; margin-top:4px;">https://github.com/patwanida62/ehp-chatbot</div>
+    </div>
+    <button onclick="navigator.clipboard.writeText('https://github.com/patwanida62/ehp-chatbot')" style="margin-left:auto; background:rgba(255,255,255,0.1); border:none; color:#cdd6f4; padding:8px 16px; border-radius:8px; cursor:pointer; font-size:12px;">
+      Copy URL
+    </button>
+  </div>
+
+  <footer>
+    EHP LINE Chatbot — Quick Start Guide &nbsp;|&nbsp; สร้างด้วย Claude Code
+  </footer>
+</div>
+
+<script>
+  function toggle(header) {
+    const card = header.parentElement;
+    card.classList.toggle('open');
+  }
+
+  function copyCode(btn) {
+    const pre = btn.parentElement;
+    const text = pre.innerText.replace('copy', '').trim();
+    navigator.clipboard.writeText(text).then(() => {
+      btn.textContent = 'copied!';
+      btn.classList.add('copied');
+      setTimeout(() => { btn.textContent = 'copy'; btn.classList.remove('copied'); }, 2000);
+    });
+  }
+</script>
+
+</body>
+</html>
