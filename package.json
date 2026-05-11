@@ -1,0 +1,20 @@
+{
+  "name": "line-ticket-webhook",
+  "version": "1.0.0",
+  "description": "Webhook server เชื่อม Line OA กับระบบ Ticket",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "nodemon server.js",
+    "ticket-api": "node ticket-api.js",
+    "ticket-api:dev": "nodemon ticket-api.js"
+  },
+  "dependencies": {
+    "axios": "^1.6.0",
+    "dotenv": "^17.4.2",
+    "express": "^4.18.0"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.0"
+  }
+}
