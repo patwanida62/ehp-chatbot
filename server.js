@@ -27,6 +27,29 @@ app.use(
 );
 
 // ============================================================
+// DEFAULT MESSAGE TEMPLATES (ใช้เมื่อ settings ไม่มีค่า)
+// ============================================================
+const DEFAULT_MSG_TICKET_OPENED =
+  `📋 Ticket: #{id}\n🔴 ปัญหา: {title}\n👤 ผู้แจ้ง: {reporterName}\n` +
+  `🏢 Service: {service}\n📂 Category: {category}\n📌 Sub Category: {subCategory}\n` +
+  `⚙️ สถานะ: {defaultStatus}\n🔧 วิธีการแก้ไข: {resolution}\n📅 รับเรื่องวันที่: {createdAt}\n\n` +
+  `ติดตามสถานะได้โดยพิมพ์:\n"ตรวจสอบ #{id}"`;
+
+const DEFAULT_MSG_STATUS_CHECK =
+  `📋 สถานะ Ticket #{id}\n🔴 ปัญหา: {title}\n⚙️ สถานะ: {status}\n` +
+  `🔧 วิธีการแก้ไข: {resolution}\n👨‍💻 ผู้ดำเนินการแก้ไข: {resolvedBy}\n{dateInfo}\n\n` +
+  `ติดตามสถานะได้โดยพิมพ์:\n"ตรวจสอบ #{id}"`;
+
+// ============================================================
+// HELPER — แทนค่าตัวแปรใน Template {variable}
+// ============================================================
+function buildMessage(template, vars) {
+  return template.replace(/\{(\w+)\}/g, (_, key) =>
+    vars[key] !== undefined ? vars[key] : `{${key}}`
+  );
+}
+
+// ============================================================
 // HELPER — Verify Line Signature
 // ============================================================
 function verifyLineSignature(req) {
@@ -130,22 +153,19 @@ app.post('/webhook/line', async (req, res) => {
         });
         const ticket = res2.data;
         const createdDate = new Date(ticket.createdAt).toLocaleString('th-TH');
-        await sendLineMessage(userId, [
-          {
-            type: 'text',
-            text:
-              `📋 Ticket: #${ticket.id}\n` +
-              `🔴 ปัญหา: ${ticket.title}\n` +
-              `👤 ผู้แจ้ง: ${ticket.reporterName}\n` +
-              `🏢 Service: ${ticket.service}\n` +
-              `📂 Category: ${ticket.category}\n` +
-              `📌 Sub Category: ${ticket.subCategory}\n` +
-              `⚙️ สถานะ: ${settings.defaultStatus}\n` +
-              `🔧 วิธีการแก้ไข: ${ticket.resolution || '-'}\n` +
-              `📅 รับเรื่องวันที่: ${createdDate}\n\n` +
-              `ติดตามสถานะได้โดยพิมพ์:\n"ตรวจสอบ #${ticket.id}"`,
-          },
-        ]);
+        const template = settings.msgTicketOpened || DEFAULT_MSG_TICKET_OPENED;
+        const msgText = buildMessage(template, {
+          id:            ticket.id,
+          title:         ticket.title,
+          reporterName:  ticket.reporterName,
+          service:       ticket.service,
+          category:      ticket.category,
+          subCategory:   ticket.subCategory,
+          defaultStatus: settings.defaultStatus,
+          resolution:    ticket.resolution || '-',
+          createdAt:     createdDate,
+        });
+        await sendLineMessage(userId, [{ type: 'text', text: msgText }]);
         console.log(`[TICKET] Auto-created #${ticket.id} for "${displayName}" keyword="${matchedKeyword}"`);
       } catch {
         await sendLineMessage(userId, [
@@ -162,24 +182,24 @@ app.post('/webhook/line', async (req, res) => {
       try {
         const res2 = await axios.get(`${TICKET_API_BASE_URL}/tickets/${ticketId}`);
         const ticket = res2.data;
+        const settingsRes  = await axios.get(`${TICKET_API_BASE_URL}/settings`);
+        const settings2    = settingsRes.data;
         const updatedDate  = new Date(ticket.updatedAt).toLocaleString('th-TH');
         const resolvedDate = ticket.resolvedAt ? new Date(ticket.resolvedAt).toLocaleString('th-TH') : '-';
         const isClosed     = ticket.status === 'closed';
-        await sendLineMessage(userId, [
-          {
-            type: 'text',
-            text:
-              `📋 สถานะ Ticket #${ticket.id}\n` +
-              `🔴 ปัญหา: ${ticket.title}\n` +
-              `⚙️ สถานะ: ${translateStatus(ticket.status)}\n` +
-              `🔧 วิธีการแก้ไข: ${ticket.resolution || '-'}\n` +
-              `👨‍💻 ผู้ดำเนินการแก้ไข: ${ticket.resolvedBy || '-'}\n` +
-              (isClosed
-                ? `✅ วันที่แก้ไขเสร็จ: ${resolvedDate}\n`
-                : `🕐 อัปเดตล่าสุด: ${updatedDate}\n`) +
-              `\nติดตามสถานะได้โดยพิมพ์:\n"ตรวจสอบ #${ticket.id}"`,
-          },
-        ]);
+        const dateInfo     = isClosed
+          ? `✅ วันที่แก้ไขเสร็จ: ${resolvedDate}`
+          : `🕐 อัปเดตล่าสุด: ${updatedDate}`;
+        const template2 = settings2.msgStatusCheck || DEFAULT_MSG_STATUS_CHECK;
+        const msgText2 = buildMessage(template2, {
+          id:         ticket.id,
+          title:      ticket.title,
+          status:     translateStatus(ticket.status),
+          resolution: ticket.resolution || '-',
+          resolvedBy: ticket.resolvedBy || '-',
+          dateInfo,
+        });
+        await sendLineMessage(userId, [{ type: 'text', text: msgText2 }]);
       } catch {
         await sendLineMessage(userId, [
           { type: 'text', text: `ไม่พบ Ticket #${ticketId} กรุณาตรวจสอบเลขอีกครั้งครับ` },

@@ -376,20 +376,68 @@
           </div>
         </div>
 
-        <!-- Preview -->
+        <!-- Message Templates -->
         <div class="admin-card" style="grid-column: 1 / -1;">
           <div class="admin-card-header">
-            <h3>👁️ ตัวอย่างข้อความที่ Bot ตอบกลับ</h3>
-            <p>ข้อความที่ลูกค้าจะได้รับเมื่อ Bot เปิด Ticket อัตโนมัติ</p>
+            <h3>💬 ข้อความตอบกลับ Bot</h3>
+            <p>แก้ไขข้อความที่ Bot ส่งหาลูกค้า — ใช้ <code style="background:#f3f4f6;padding:1px 6px;border-radius:4px;font-size:11px">{ชื่อตัวแปร}</code> เพื่อแทรกข้อมูลอัตโนมัติ</p>
           </div>
-          <div class="admin-card-body" style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
-            <div>
-              <div class="form-label" style="margin-bottom:10px">ข้อความเปิด Ticket</div>
-              <div style="background:#1e1e2e;border-radius:12px;padding:16px 20px;font-family:'Segoe UI',sans-serif;font-size:13px;color:#cdd6f4;line-height:1.8;white-space:pre-wrap" id="preview-open"></div>
+          <div class="admin-card-body">
+
+            <!-- Variable Reference -->
+            <div style="background:#f8fafc;border:1px solid var(--border);border-radius:10px;padding:14px 18px;margin-bottom:20px">
+              <div style="font-size:11px;font-weight:700;color:var(--sub);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:10px">ตัวแปรที่ใช้ได้</div>
+              <div style="display:flex;flex-wrap:wrap;gap:8px;font-size:12px">
+                <span style="background:#dbeafe;color:#1e40af;padding:2px 9px;border-radius:6px;font-family:monospace">{id}</span>
+                <span style="background:#dbeafe;color:#1e40af;padding:2px 9px;border-radius:6px;font-family:monospace">{title}</span>
+                <span style="background:#dbeafe;color:#1e40af;padding:2px 9px;border-radius:6px;font-family:monospace">{reporterName}</span>
+                <span style="background:#dbeafe;color:#1e40af;padding:2px 9px;border-radius:6px;font-family:monospace">{service}</span>
+                <span style="background:#dbeafe;color:#1e40af;padding:2px 9px;border-radius:6px;font-family:monospace">{category}</span>
+                <span style="background:#dbeafe;color:#1e40af;padding:2px 9px;border-radius:6px;font-family:monospace">{subCategory}</span>
+                <span style="background:#dbeafe;color:#1e40af;padding:2px 9px;border-radius:6px;font-family:monospace">{defaultStatus}</span>
+                <span style="background:#dbeafe;color:#1e40af;padding:2px 9px;border-radius:6px;font-family:monospace">{resolution}</span>
+                <span style="background:#dbeafe;color:#1e40af;padding:2px 9px;border-radius:6px;font-family:monospace">{createdAt}</span>
+                <span style="background:#dcfce7;color:#14532d;padding:2px 9px;border-radius:6px;font-family:monospace">{status}</span>
+                <span style="background:#dcfce7;color:#14532d;padding:2px 9px;border-radius:6px;font-family:monospace">{resolvedBy}</span>
+                <span style="background:#dcfce7;color:#14532d;padding:2px 9px;border-radius:6px;font-family:monospace">{dateInfo}</span>
+              </div>
+              <div style="font-size:11px;color:var(--sub);margin-top:8px">
+                🔵 = ใช้ได้ในข้อความเปิด Ticket &nbsp;|&nbsp; 🟢 = ใช้ได้ในข้อความตรวจสอบสถานะ &nbsp;|&nbsp;
+                <code style="font-size:11px">{dateInfo}</code> = แสดงวันแก้ไขเสร็จ (ถ้าปิด) หรือวันอัปเดตล่าสุด
+              </div>
             </div>
-            <div>
-              <div class="form-label" style="margin-bottom:10px">ข้อความตรวจสอบสถานะ</div>
-              <div style="background:#1e1e2e;border-radius:12px;padding:16px 20px;font-family:'Segoe UI',sans-serif;font-size:13px;color:#cdd6f4;line-height:1.8;white-space:pre-wrap" id="preview-status"></div>
+
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px">
+
+              <!-- Template 1: เปิด Ticket -->
+              <div>
+                <div class="form-group">
+                  <label class="form-label">✏️ ข้อความเปิด Ticket (เมื่อลูกค้าพิมพ์ Keyword)</label>
+                  <textarea class="textarea" id="s-msgTicketOpened" rows="10"
+                    oninput="updatePreviewFromTemplate()"
+                    style="font-family:monospace;font-size:12px;line-height:1.7"></textarea>
+                </div>
+                <div class="form-label" style="margin-bottom:8px">👁️ Preview</div>
+                <div style="background:#1e1e2e;border-radius:10px;padding:14px 18px;font-size:13px;color:#cdd6f4;line-height:1.8;white-space:pre-wrap;min-height:80px" id="preview-open"></div>
+              </div>
+
+              <!-- Template 2: ตรวจสอบสถานะ -->
+              <div>
+                <div class="form-group">
+                  <label class="form-label">✏️ ข้อความตรวจสอบสถานะ (เมื่อลูกค้าพิมพ์ "ตรวจสอบ #...")</label>
+                  <textarea class="textarea" id="s-msgStatusCheck" rows="10"
+                    oninput="updatePreviewFromTemplate()"
+                    style="font-family:monospace;font-size:12px;line-height:1.7"></textarea>
+                </div>
+                <div class="form-label" style="margin-bottom:8px">👁️ Preview</div>
+                <div style="background:#1e1e2e;border-radius:10px;padding:14px 18px;font-size:13px;color:#cdd6f4;line-height:1.8;white-space:pre-wrap;min-height:80px" id="preview-status"></div>
+              </div>
+
+            </div>
+
+            <div style="margin-top:20px;display:flex;gap:10px;justify-content:flex-end">
+              <button class="btn btn-outline" onclick="resetDefaultTemplates()">↩ คืนค่าเริ่มต้น</button>
+              <button class="btn btn-primary" onclick="saveSettings()">💾 บันทึกทั้งหมด</button>
             </div>
           </div>
         </div>
@@ -703,71 +751,88 @@ async function deleteKeyword(index) {
 }
 
 // ===== SETTINGS =====
+const DEFAULT_MSG_TICKET_OPENED =
+  `📋 Ticket: #{id}\n🔴 ปัญหา: {title}\n👤 ผู้แจ้ง: {reporterName}\n` +
+  `🏢 Service: {service}\n📂 Category: {category}\n📌 Sub Category: {subCategory}\n` +
+  `⚙️ สถานะ: {defaultStatus}\n🔧 วิธีการแก้ไข: {resolution}\n📅 รับเรื่องวันที่: {createdAt}\n\n` +
+  `ติดตามสถานะได้โดยพิมพ์:\n"ตรวจสอบ #{id}"`;
+
+const DEFAULT_MSG_STATUS_CHECK =
+  `📋 สถานะ Ticket #{id}\n🔴 ปัญหา: {title}\n⚙️ สถานะ: {status}\n` +
+  `🔧 วิธีการแก้ไข: {resolution}\n👨‍💻 ผู้ดำเนินการแก้ไข: {resolvedBy}\n{dateInfo}\n\n` +
+  `ติดตามสถานะได้โดยพิมพ์:\n"ตรวจสอบ #{id}"`;
+
+function buildMessage(template, vars) {
+  return template.replace(/\{(\w+)\}/g, (_, key) => vars[key] !== undefined ? vars[key] : `{${key}}`);
+}
+
 async function loadSettings() {
   try {
     const res = await fetch(`${API}/settings`);
     const s = await res.json();
-    document.getElementById('s-service').value       = s.service       || '';
-    document.getElementById('s-category').value      = s.category      || '';
-    document.getElementById('s-subCategory').value   = s.subCategory   || '';
-    document.getElementById('s-defaultStatus').value = s.defaultStatus || '';
-    updatePreview(s);
+    document.getElementById('s-service').value          = s.service          || '';
+    document.getElementById('s-category').value         = s.category         || '';
+    document.getElementById('s-subCategory').value      = s.subCategory      || '';
+    document.getElementById('s-defaultStatus').value    = s.defaultStatus    || '';
+    document.getElementById('s-msgTicketOpened').value  = s.msgTicketOpened  || DEFAULT_MSG_TICKET_OPENED;
+    document.getElementById('s-msgStatusCheck').value   = s.msgStatusCheck   || DEFAULT_MSG_STATUS_CHECK;
+    updatePreviewFromTemplate();
   } catch {}
 }
 
 async function saveSettings() {
   const body = {
-    service:       document.getElementById('s-service').value,
-    category:      document.getElementById('s-category').value,
-    subCategory:   document.getElementById('s-subCategory').value,
-    defaultStatus: document.getElementById('s-defaultStatus').value,
+    service:            document.getElementById('s-service').value,
+    category:           document.getElementById('s-category').value,
+    subCategory:        document.getElementById('s-subCategory').value,
+    defaultStatus:      document.getElementById('s-defaultStatus').value,
+    msgTicketOpened:    document.getElementById('s-msgTicketOpened').value,
+    msgStatusCheck:     document.getElementById('s-msgStatusCheck').value,
   };
   try {
-    const res = await fetch(`${API}/settings`, {
+    await fetch(`${API}/settings`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body),
     });
-    const s = await res.json();
-    updatePreview(s);
+    updatePreviewFromTemplate();
     showToast('✅ บันทึก Settings แล้ว', 'success');
   } catch { showToast('❌ บันทึกไม่สำเร็จ', 'error'); }
 }
 
-function updatePreview(s) {
-  const now = new Date().toLocaleString('th-TH');
-  document.getElementById('preview-open').textContent =
-    `📋 Ticket: #0042\n` +
-    `🔴 ปัญหา: เข้าระบบไม่ได้\n` +
-    `👤 ผู้แจ้ง: สมชาย ใจดี\n` +
-    `🏢 Service: ${s.service || '-'}\n` +
-    `📂 Category: ${s.category || '-'}\n` +
-    `📌 Sub Category: ${s.subCategory || '-'}\n` +
-    `⚙️ สถานะ: ${s.defaultStatus || '-'}\n` +
-    `🔧 วิธีการแก้ไข: -\n` +
-    `📅 รับเรื่องวันที่: ${now}\n\n` +
-    `ติดตามสถานะได้โดยพิมพ์:\n"ตรวจสอบ #0042"`;
-
-  document.getElementById('preview-status').textContent =
-    `📋 สถานะ Ticket #0042\n` +
-    `🔴 ปัญหา: เข้าระบบไม่ได้\n` +
-    `⚙️ สถานะ: 🔵 กำลังดำเนินการ\n` +
-    `🔧 วิธีการแก้ไข: -\n` +
-    `👨‍💻 ผู้ดำเนินการแก้ไข: -\n` +
-    `🕐 อัปเดตล่าสุด: ${now}\n\n` +
-    `ติดตามสถานะได้โดยพิมพ์:\n"ตรวจสอบ #0042"`;
+function resetDefaultTemplates() {
+  if (!confirm('คืนค่าข้อความเริ่มต้น? ข้อความที่แก้ไขจะถูกลบ')) return;
+  document.getElementById('s-msgTicketOpened').value = DEFAULT_MSG_TICKET_OPENED;
+  document.getElementById('s-msgStatusCheck').value  = DEFAULT_MSG_STATUS_CHECK;
+  updatePreviewFromTemplate();
 }
 
-// Live preview ขณะพิมพ์
-['s-service','s-category','s-subCategory','s-defaultStatus'].forEach(id => {
-  document.getElementById(id).addEventListener('input', () => {
-    updatePreview({
-      service:       document.getElementById('s-service').value,
-      category:      document.getElementById('s-category').value,
-      subCategory:   document.getElementById('s-subCategory').value,
-      defaultStatus: document.getElementById('s-defaultStatus').value,
-    });
+function updatePreviewFromTemplate() {
+  const now = new Date().toLocaleString('th-TH');
+  const s = {
+    service:       document.getElementById('s-service').value       || 'EHP CIS',
+    category:      document.getElementById('s-category').value      || 'ปัญหาการใช้งานทั่วไป',
+    subCategory:   document.getElementById('s-subCategory').value   || 'การใช้งานทั่วไป',
+    defaultStatus: document.getElementById('s-defaultStatus').value || 'กำลังดำเนินการ',
+  };
+  const tpl1 = document.getElementById('s-msgTicketOpened').value || DEFAULT_MSG_TICKET_OPENED;
+  const tpl2 = document.getElementById('s-msgStatusCheck').value  || DEFAULT_MSG_STATUS_CHECK;
+
+  document.getElementById('preview-open').textContent = buildMessage(tpl1, {
+    id: '0042', title: 'เข้าระบบไม่ได้', reporterName: 'สมชาย ใจดี',
+    service: s.service, category: s.category, subCategory: s.subCategory,
+    defaultStatus: s.defaultStatus, resolution: '-', createdAt: now,
   });
+
+  document.getElementById('preview-status').textContent = buildMessage(tpl2, {
+    id: '0042', title: 'เข้าระบบไม่ได้',
+    status: '🔵 กำลังดำเนินการ', resolution: '-', resolvedBy: '-',
+    dateInfo: `🕐 อัปเดตล่าสุด: ${now}`,
+  });
+}
+
+['s-service','s-category','s-subCategory','s-defaultStatus'].forEach(id => {
+  document.getElementById(id).addEventListener('input', updatePreviewFromTemplate);
 });
 
 // ===== TOAST =====
