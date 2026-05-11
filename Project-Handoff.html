@@ -1,0 +1,504 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Project Handoff — EHP LINE Chatbot</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Segoe UI', sans-serif; background: #f5f7fa; color: #333; line-height: 1.6; }
+
+    header {
+      background: linear-gradient(135deg, #06c755, #04a040);
+      color: white; padding: 40px 48px;
+    }
+    header h1 { font-size: 28px; font-weight: 700; margin-bottom: 6px; }
+    header p  { font-size: 14px; opacity: 0.85; }
+    .meta { display: flex; gap: 10px; margin-top: 16px; flex-wrap: wrap; }
+    .meta span {
+      background: rgba(255,255,255,0.2); padding: 4px 14px;
+      border-radius: 99px; font-size: 12px; font-weight: 600;
+    }
+
+    .container { max-width: 980px; margin: 0 auto; padding: 40px 24px 60px; }
+
+    /* Section */
+    .section { margin-bottom: 36px; }
+    .section-label {
+      font-size: 11px; font-weight: 700; color: #06c755;
+      text-transform: uppercase; letter-spacing: 1.5px;
+      margin-bottom: 12px; display: flex; align-items: center; gap: 8px;
+    }
+    .section-label::after {
+      content: ''; flex: 1; height: 1px; background: #e0e0e0;
+    }
+
+    /* Cards */
+    .card {
+      background: white; border-radius: 14px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.07);
+      overflow: hidden; margin-bottom: 16px;
+    }
+    .card-header {
+      display: flex; align-items: center; gap: 14px;
+      padding: 16px 22px; border-bottom: 1px solid #f0f0f0;
+      background: #fafafa;
+    }
+    .card-icon { font-size: 22px; }
+    .card-title { font-size: 15px; font-weight: 700; color: #111; }
+    .card-sub   { font-size: 12px; color: #999; margin-top: 2px; }
+    .card-body  { padding: 20px 22px; }
+
+    /* Feature grid */
+    .feature-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 12px; }
+    .feature-item {
+      background: #f8f9fa; border-radius: 10px;
+      padding: 16px; text-align: center;
+      border: 1px solid #eee;
+    }
+    .feature-item .fi { font-size: 28px; margin-bottom: 8px; }
+    .feature-item .ft { font-size: 13px; font-weight: 600; color: #111; }
+    .feature-item .fd { font-size: 12px; color: #888; margin-top: 4px; }
+
+    /* File tree */
+    .file-tree { font-family: monospace; font-size: 13px; line-height: 2; }
+    .file-tree .folder { color: #f59e0b; font-weight: 700; }
+    .file-tree .file-green  { color: #06c755; }
+    .file-tree .file-blue   { color: #3b82f6; }
+    .file-tree .file-orange { color: #f97316; }
+    .file-tree .file-gray   { color: #aaa; text-decoration: line-through; }
+    .file-tree .desc { color: #888; font-size: 11px; margin-left: 8px; }
+
+    /* Steps */
+    .steps { display: flex; flex-direction: column; gap: 0; }
+    .step-row {
+      display: flex; gap: 0; position: relative;
+    }
+    .step-left {
+      display: flex; flex-direction: column; align-items: center;
+      width: 48px; flex-shrink: 0;
+    }
+    .step-circle {
+      width: 36px; height: 36px; border-radius: 50%;
+      background: #06c755; color: white;
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 700; font-size: 14px; flex-shrink: 0; z-index: 1;
+    }
+    .step-line { width: 2px; background: #d1fae5; flex: 1; min-height: 20px; }
+    .step-row:last-child .step-line { display: none; }
+    .step-content {
+      background: white; border-radius: 12px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+      padding: 16px 20px; margin-bottom: 12px;
+      flex: 1;
+    }
+    .step-title { font-size: 14px; font-weight: 700; margin-bottom: 6px; }
+    .step-desc  { font-size: 13px; color: #555; }
+
+    /* Table */
+    table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    th { text-align: left; padding: 10px 14px; background: #f8f9fa; color: #666; font-weight: 600; border-bottom: 2px solid #eee; }
+    td { padding: 10px 14px; border-bottom: 1px solid #f0f0f0; vertical-align: top; }
+    tr:last-child td { border-bottom: none; }
+    .td-code { font-family: monospace; color: #d63031; font-size: 12px; }
+    .badge {
+      display: inline-block; padding: 2px 10px;
+      border-radius: 99px; font-size: 11px; font-weight: 700;
+    }
+    .badge-green  { background: #e8f8ee; color: #06c755; }
+    .badge-blue   { background: #eff6ff; color: #1976d2; }
+    .badge-orange { background: #fff7ed; color: #ea580c; }
+    .badge-red    { background: #fef2f2; color: #dc2626; }
+
+    pre {
+      background: #1e1e2e; color: #cdd6f4;
+      border-radius: 8px; padding: 14px 18px;
+      font-size: 13px; overflow-x: auto; line-height: 1.8;
+      margin-top: 10px;
+    }
+    .cm  { color: #6c7086; }
+    .kw  { color: #89b4fa; }
+    .str { color: #a6e3a1; }
+
+    .info-box {
+      border-radius: 8px; padding: 12px 16px;
+      font-size: 13px; margin-top: 12px;
+    }
+    .info-box.yellow { background: #fffbea; border-left: 4px solid #f59e0b; color: #78350f; }
+    .info-box.blue   { background: #eff6ff; border-left: 4px solid #3b82f6; color: #1e3a5f; }
+    .info-box.green  { background: #e8f8ee; border-left: 4px solid #06c755; color: #1a4731; }
+    .info-box.red    { background: #fef2f2; border-left: 4px solid #dc2626; color: #7f1d1d; }
+
+    /* Checklist */
+    .checklist { display: flex; flex-direction: column; gap: 8px; }
+    .check-item {
+      display: flex; align-items: flex-start; gap: 10px;
+      padding: 10px 14px; background: #f8f9fa;
+      border-radius: 8px; font-size: 13px; cursor: pointer;
+    }
+    .check-item input { margin-top: 2px; accent-color: #06c755; width: 16px; height: 16px; }
+    .check-item.done { background: #e8f8ee; text-decoration: line-through; color: #888; }
+
+    /* Delivery options */
+    .delivery-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    .delivery-card {
+      background: #f8f9fa; border-radius: 12px;
+      padding: 20px; border: 2px solid #eee;
+      transition: border-color 0.2s;
+    }
+    .delivery-card:hover { border-color: #06c755; }
+    .delivery-card .dc-icon { font-size: 28px; margin-bottom: 10px; }
+    .delivery-card .dc-title { font-size: 15px; font-weight: 700; margin-bottom: 6px; }
+    .delivery-card .dc-desc { font-size: 13px; color: #666; line-height: 1.6; }
+    .delivery-card ul { margin-top: 8px; padding-left: 18px; font-size: 13px; color: #555; }
+    .delivery-card li { margin-bottom: 4px; }
+
+    footer {
+      text-align: center; padding: 32px;
+      font-size: 13px; color: #aaa;
+      border-top: 1px solid #eee;
+    }
+
+    @media print {
+      body { background: white; }
+      .card { box-shadow: none; border: 1px solid #eee; }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>📦 Project Handoff — EHP LINE Chatbot</h1>
+  <p>สรุปสิ่งที่พัฒนาแล้ว และขั้นตอนส่งมอบให้ทีม Developer</p>
+  <div class="meta">
+    <span>Version 1.0</span>
+    <span>Node.js + Express</span>
+    <span>LINE Messaging API</span>
+    <span>11 พฤษภาคม 2569</span>
+    <span>เตรียมโดย: PAT</span>
+  </div>
+</header>
+
+<div class="container">
+
+  <!-- ฟีเจอร์ที่พัฒนาแล้ว -->
+  <div class="section">
+    <div class="section-label">ฟีเจอร์ที่พัฒนาแล้ว</div>
+    <div class="feature-grid">
+      <div class="feature-item">
+        <div class="fi">🤖</div>
+        <div class="ft">Auto Ticket</div>
+        <div class="fd">เปิด Ticket อัตโนมัติเมื่อลูกค้าพิม keyword</div>
+      </div>
+      <div class="feature-item">
+        <div class="fi">🔍</div>
+        <div class="ft">ตรวจสอบสถานะ</div>
+        <div class="fd">ลูกค้าพิม "ตรวจสอบ #001" ดูสถานะได้ทันที</div>
+      </div>
+      <div class="feature-item">
+        <div class="fi">🔔</div>
+        <div class="ft">แจ้งเตือน LINE</div>
+        <div class="fd">Bot ส่งข้อความเมื่อเปิด/ปิด Ticket</div>
+      </div>
+      <div class="feature-item">
+        <div class="fi">👤</div>
+        <div class="ft">ดึงชื่อ LINE</div>
+        <div class="fd">อ่านชื่อจาก LINE Profile ใส่ใน Ticket</div>
+      </div>
+      <div class="feature-item">
+        <div class="fi">⚙️</div>
+        <div class="ft">Admin UI</div>
+        <div class="fd">หน้าจอจัดการ Keyword และข้อมูลตอบกลับ</div>
+      </div>
+      <div class="feature-item">
+        <div class="fi">🔌</div>
+        <div class="ft">API Ready</div>
+        <div class="fd">พร้อมเชื่อมต่อกับ Ticket System จริง</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- โครงสร้างไฟล์ -->
+  <div class="section">
+    <div class="section-label">โครงสร้างไฟล์ทั้งหมด</div>
+    <div class="card">
+      <div class="card-body">
+        <div class="file-tree">
+          <div><span class="folder">📁 EHP Chatbot/</span></div>
+          <div>&nbsp;&nbsp;├── <span class="file-green">server.js</span> <span class="desc">— Bot Webhook Server (port 3000)</span></div>
+          <div>&nbsp;&nbsp;├── <span class="file-green">ticket-api.js</span> <span class="desc">— Ticket API + Admin Server (port 4000)</span></div>
+          <div>&nbsp;&nbsp;├── <span class="file-blue">admin.html</span> <span class="desc">— หน้า Admin จัดการ Keyword และ Settings</span></div>
+          <div>&nbsp;&nbsp;├── <span class="file-blue">API-Document.html</span> <span class="desc">— เอกสาร API สำหรับ Dev</span></div>
+          <div>&nbsp;&nbsp;├── <span class="file-blue">Server-Setup-Guide.html</span> <span class="desc">— คู่มือติดตั้งบน Server</span></div>
+          <div>&nbsp;&nbsp;├── <span class="file-blue">Project-Handoff.html</span> <span class="desc">— เอกสารนี้</span></div>
+          <div>&nbsp;&nbsp;├── <span class="file-orange">keywords.json</span> <span class="desc">— รายการ keyword สำหรับเปิด Ticket อัตโนมัติ</span></div>
+          <div>&nbsp;&nbsp;├── <span class="file-orange">settings.json</span> <span class="desc">— ค่า Service, Category, ข้อความตอบกลับ</span></div>
+          <div>&nbsp;&nbsp;├── <span class="file-orange">package.json</span> <span class="desc">— Dependencies</span></div>
+          <div>&nbsp;&nbsp;├── <span class="file-orange">.env.example</span> <span class="desc">— Template ค่า Config</span></div>
+          <div>&nbsp;&nbsp;├── <span class="file-gray">.env</span> <span class="desc">— ค่า Config จริง (ห้าม commit)</span></div>
+          <div>&nbsp;&nbsp;└── <span class="file-gray">node_modules/</span> <span class="desc">— ห้าม copy ให้รัน npm install ใหม่</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- การทำงานของระบบ -->
+  <div class="section">
+    <div class="section-label">การทำงานของระบบ</div>
+    <div class="card">
+      <div class="card-body">
+        <table>
+          <tr>
+            <th>ลูกค้าทำอะไร</th>
+            <th>Bot ทำอะไร</th>
+            <th>API ที่เรียก</th>
+            <th>สถานะ</th>
+          </tr>
+          <tr>
+            <td>พิม keyword เช่น "เข้าระบบไม่ได้"</td>
+            <td>เปิด Ticket + ส่งใบรับเรื่องกลับ</td>
+            <td class="td-code">POST /tickets</td>
+            <td><span class="badge badge-green">✅ พร้อม</span></td>
+          </tr>
+          <tr>
+            <td>พิม "ตรวจสอบ #001"</td>
+            <td>ดึงสถานะ + วิธีแก้ + ผู้ดำเนินการ</td>
+            <td class="td-code">GET /tickets/:id</td>
+            <td><span class="badge badge-green">✅ พร้อม</span></td>
+          </tr>
+          <tr>
+            <td>—</td>
+            <td>รับ Webhook แจ้งเตือนปิด Ticket</td>
+            <td class="td-code">POST /notify/ticket-closed</td>
+            <td><span class="badge badge-green">✅ พร้อม</span></td>
+          </tr>
+          <tr>
+            <td>—</td>
+            <td>รับ Webhook แจ้งเตือนเปิด Ticket</td>
+            <td class="td-code">POST /notify/ticket-opened</td>
+            <td><span class="badge badge-green">✅ พร้อม</span></td>
+          </tr>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- สิ่งที่ Bot ต้องการจาก Ticket System -->
+  <div class="section">
+    <div class="section-label">สิ่งที่ Dev ต้องทำในระบบ Ticket</div>
+    <div class="card">
+      <div class="card-header">
+        <div class="card-icon">🔌</div>
+        <div>
+          <div class="card-title">เพิ่ม 3 API Endpoint ในระบบ Ticket เดิม</div>
+          <div class="card-sub">ดูรายละเอียดใน API-Document.html</div>
+        </div>
+      </div>
+      <div class="card-body">
+        <table>
+          <tr>
+            <th>Endpoint</th>
+            <th>Method</th>
+            <th>หน้าที่</th>
+            <th>ความสำคัญ</th>
+          </tr>
+          <tr>
+            <td class="td-code">/api/tickets</td>
+            <td><span class="badge badge-green">POST</span></td>
+            <td>สร้าง Ticket ใหม่จาก LINE Bot</td>
+            <td><span class="badge badge-red">บังคับ</span></td>
+          </tr>
+          <tr>
+            <td class="td-code">/api/tickets/:id</td>
+            <td><span class="badge badge-blue">GET</span></td>
+            <td>ดึงสถานะ + วิธีแก้ไข + ผู้ดำเนินการ</td>
+            <td><span class="badge badge-red">บังคับ</span></td>
+          </tr>
+          <tr>
+            <td class="td-code">/api/tickets/:id/status</td>
+            <td><span class="badge badge-orange">PATCH</span></td>
+            <td>อัปเดตสถานะ + วิธีแก้ไข + ผู้ดำเนินการ</td>
+            <td><span class="badge badge-red">บังคับ</span></td>
+          </tr>
+        </table>
+        <div class="info-box blue">
+          💡 Response ต้องมี field: <code>id, title, status, resolution, resolvedBy, resolvedAt, createdAt, updatedAt</code><br>
+          ดูรายละเอียดครบถ้วนใน <strong>API-Document.html</strong>
+        </div>
+        <div class="info-box yellow" style="margin-top:8px;">
+          ⚠️ เมื่อเจ้าหน้าที่ <strong>ปิด Ticket</strong> ในระบบ ให้ระบบ Ticket เรียก Bot ด้วย:<br>
+          <code>POST http://&lt;bot-server&gt;:3000/notify/ticket-closed</code><br>
+          Body: <code>{"ticketId":"001", "title":"...", "lineUserId":"U..."}</code>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ขั้นตอนส่งงานให้ Dev -->
+  <div class="section">
+    <div class="section-label">ขั้นตอนส่งงานให้ Dev</div>
+    <div class="steps">
+
+      <div class="step-row">
+        <div class="step-left">
+          <div class="step-circle">1</div>
+          <div class="step-line"></div>
+        </div>
+        <div class="step-content">
+          <div class="step-title">📁 ส่งโฟลเดอร์โปรเจกต์</div>
+          <div class="step-desc">
+            Zip ไฟล์ทั้งหมด <strong>ยกเว้น</strong> .env และ node_modules/ แล้วส่งให้ Dev<br>
+            หรือ Push ขึ้น Git Repository แล้วส่ง URL
+          </div>
+          <pre><span class="cm"># สิ่งที่ต้อง Zip และส่ง</span>
+server.js, ticket-api.js, package.json
+admin.html, keywords.json, settings.json
+.env.example, API-Document.html
+Server-Setup-Guide.html, Project-Handoff.html</pre>
+        </div>
+      </div>
+
+      <div class="step-row">
+        <div class="step-left">
+          <div class="step-circle">2</div>
+          <div class="step-line"></div>
+        </div>
+        <div class="step-content">
+          <div class="step-title">📄 ส่งเอกสาร API ให้ Dev อ่าน</div>
+          <div class="step-desc">
+            เปิดไฟล์ <strong>API-Document.html</strong> แล้วส่งให้ Dev เพื่อเพิ่ม Endpoint ในระบบ Ticket
+          </div>
+        </div>
+      </div>
+
+      <div class="step-row">
+        <div class="step-left">
+          <div class="step-circle">3</div>
+          <div class="step-line"></div>
+        </div>
+        <div class="step-content">
+          <div class="step-title">🔑 ส่ง Credential ให้ Dev</div>
+          <div class="step-desc">ส่งค่าเหล่านี้ผ่านช่องทางที่ปลอดภัย (ไม่ควรส่งทาง Email หรือ Chat)</div>
+          <table style="margin-top:10px;">
+            <tr><th>ค่า Config</th><th>หมายเหตุ</th></tr>
+            <tr><td class="td-code">LINE_CHANNEL_ACCESS_TOKEN</td><td>จาก LINE Developer Console</td></tr>
+            <tr><td class="td-code">LINE_CHANNEL_SECRET</td><td>จาก LINE Developer Console</td></tr>
+            <tr><td class="td-code">TICKET_API_BASE_URL</td><td>URL ของ Ticket System จริง</td></tr>
+          </table>
+        </div>
+      </div>
+
+      <div class="step-row">
+        <div class="step-left">
+          <div class="step-circle">4</div>
+          <div class="step-line"></div>
+        </div>
+        <div class="step-content">
+          <div class="step-title">🖥️ ส่งคู่มือติดตั้ง Server ให้ Dev</div>
+          <div class="step-desc">
+            ส่งไฟล์ <strong>Server-Setup-Guide.html</strong> ให้ Dev ทำตามขั้นตอน<br>
+            Server ที่จะใช้: <strong>Windows Server</strong>
+          </div>
+        </div>
+      </div>
+
+      <div class="step-row">
+        <div class="step-left">
+          <div class="step-circle">5</div>
+          <div class="step-line"></div>
+        </div>
+        <div class="step-content">
+          <div class="step-title">✅ UAT — ทดสอบร่วมกับ Dev</div>
+          <div class="step-desc">หลัง Dev ติดตั้งเสร็จแล้ว ทดสอบด้วย checklist นี้:</div>
+          <div class="checklist" style="margin-top:12px;">
+            <label class="check-item"><input type="checkbox"> พิม keyword ใน LINE → Bot เปิด Ticket → ข้อมูลปรากฏในระบบ Ticket จริง</label>
+            <label class="check-item"><input type="checkbox"> พิม "ตรวจสอบ #001" → Bot แสดงสถานะจากระบบ Ticket จริง</label>
+            <label class="check-item"><input type="checkbox"> เจ้าหน้าที่ปิด Ticket ในระบบ → Bot ส่งข้อความแจ้งลูกค้าใน LINE</label>
+            <label class="check-item"><input type="checkbox"> ชื่อผู้แจ้งแสดงถูกต้องตาม LINE Display Name</label>
+            <label class="check-item"><input type="checkbox"> วิธีแก้ไขและผู้ดำเนินการแสดงใน "ตรวจสอบ" ถูกต้อง</label>
+            <label class="check-item"><input type="checkbox"> หน้า Admin เพิ่ม/ลบ Keyword ได้และมีผลทันที</label>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- วิธีส่ง -->
+  <div class="section">
+    <div class="section-label">ช่องทางส่งงานให้ Dev</div>
+    <div class="delivery-grid">
+      <div class="delivery-card">
+        <div class="dc-icon">📧</div>
+        <div class="dc-title">ส่งทาง Email</div>
+        <div class="dc-desc">Zip ไฟล์แล้วแนบมากับ Email</div>
+        <ul>
+          <li>Zip โฟลเดอร์ทั้งหมด (ยกเว้น .env, node_modules)</li>
+          <li>แนบไฟล์ API-Document.html</li>
+          <li>แนบไฟล์ Server-Setup-Guide.html</li>
+          <li>แนบไฟล์ Project-Handoff.html (เอกสารนี้)</li>
+        </ul>
+        <div class="info-box red" style="margin-top:10px;">⚠️ ห้ามส่ง .env ทาง Email</div>
+      </div>
+      <div class="delivery-card">
+        <div class="dc-icon">🗄️</div>
+        <div class="dc-title">ส่งผ่าน Git Repository</div>
+        <div class="dc-desc">Push โค้ดขึ้น GitHub/GitLab แล้วส่ง URL</div>
+        <ul>
+          <li>ตรวจสอบว่า .env อยู่ใน .gitignore แล้ว</li>
+          <li>Push ขึ้น Private Repository</li>
+          <li>เพิ่ม Dev เป็น Collaborator</li>
+          <li>ส่ง Credential แยกต่างหากทางช่องทางปลอดภัย</li>
+        </ul>
+        <div class="info-box green" style="margin-top:10px;">✅ วิธีนี้แนะนำที่สุด</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ไฟล์เอกสารทั้งหมด -->
+  <div class="section">
+    <div class="section-label">ไฟล์เอกสารที่ต้องส่งให้ Dev</div>
+    <div class="card">
+      <div class="card-body">
+        <table>
+          <tr>
+            <th>ไฟล์</th>
+            <th>เนื้อหา</th>
+            <th>ส่งให้ใคร</th>
+          </tr>
+          <tr>
+            <td class="td-code">API-Document.html</td>
+            <td>รายละเอียด API ที่ต้องเพิ่มในระบบ Ticket</td>
+            <td><span class="badge badge-blue">Backend Dev</span></td>
+          </tr>
+          <tr>
+            <td class="td-code">Server-Setup-Guide.html</td>
+            <td>ขั้นตอนติดตั้งบน Windows Server</td>
+            <td><span class="badge badge-orange">System Admin</span></td>
+          </tr>
+          <tr>
+            <td class="td-code">Project-Handoff.html</td>
+            <td>สรุปโปรเจกต์และ checklist UAT</td>
+            <td><span class="badge badge-green">ทุกคน</span></td>
+          </tr>
+        </table>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<footer>
+  EHP LINE Chatbot — Project Handoff Document v1.0 | 11 พฤษภาคม 2569
+</footer>
+
+<script>
+  document.querySelectorAll('.check-item input').forEach(cb => {
+    cb.addEventListener('change', function() {
+      this.closest('.check-item').classList.toggle('done', this.checked);
+    });
+  });
+</script>
+
+</body>
+</html>

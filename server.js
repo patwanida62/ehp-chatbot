@@ -60,7 +60,21 @@ async function sendLineMessage(userId, messages) {
 // ============================================================
 async function getUserIdFromTicket(ticketId) {
   const res = await axios.get(`${TICKET_API_BASE_URL}/tickets/${ticketId}`);
-  return res.data.lineUserId; // ต้องเก็บ lineUserId ไว้ใน Ticket ด้วย
+  return res.data.lineUserId;
+}
+
+// ============================================================
+// HELPER — ดึงชื่อ Display Name จาก LINE Profile
+// ============================================================
+async function getLineDisplayName(userId) {
+  try {
+    const res = await axios.get(`https://api.line.me/v2/bot/profile/${userId}`, {
+      headers: { Authorization: `Bearer ${LINE_CHANNEL_ACCESS_TOKEN}` },
+    });
+    return res.data.displayName;
+  } catch {
+    return 'ไม่ทราบชื่อ';
+  }
 }
 
 // ============================================================
@@ -86,6 +100,61 @@ app.post('/webhook/line', async (req, res) => {
 
     console.log(`[LINE] userId=${userId} | message="${text}"`);
 
+    // keyword ที่ทำให้เปิด Ticket อัตโนมัติ — โหลดจาก API ทุกครั้ง
+    let AUTO_TICKET_KEYWORDS = [];
+    try {
+      const kwRes = await axios.get(`${TICKET_API_BASE_URL}/keywords`);
+      AUTO_TICKET_KEYWORDS = kwRes.data;
+    } catch {
+      AUTO_TICKET_KEYWORDS = [];
+    }
+
+    const matchedKeyword = AUTO_TICKET_KEYWORDS.find((kw) =>
+      text.toLowerCase().includes(kw.toLowerCase())
+    );
+
+    if (matchedKeyword) {
+      try {
+        const [displayName, settings] = await Promise.all([
+          getLineDisplayName(userId),
+          axios.get(`${TICKET_API_BASE_URL}/settings`).then((r) => r.data),
+        ]);
+        const title = text.trim();
+        const res2 = await axios.post(`${TICKET_API_BASE_URL}/tickets`, {
+          title,
+          lineUserId: userId,
+          reporterName: displayName,
+          service: settings.service,
+          category: settings.category,
+          subCategory: settings.subCategory,
+        });
+        const ticket = res2.data;
+        const createdDate = new Date(ticket.createdAt).toLocaleString('th-TH');
+        await sendLineMessage(userId, [
+          {
+            type: 'text',
+            text:
+              `📋 Ticket: #${ticket.id}\n` +
+              `🔴 ปัญหา: ${ticket.title}\n` +
+              `👤 ผู้แจ้ง: ${ticket.reporterName}\n` +
+              `🏢 Service: ${ticket.service}\n` +
+              `📂 Category: ${ticket.category}\n` +
+              `📌 Sub Category: ${ticket.subCategory}\n` +
+              `⚙️ สถานะ: ${settings.defaultStatus}\n` +
+              `🔧 วิธีการแก้ไข: ${ticket.resolution || '-'}\n` +
+              `📅 รับเรื่องวันที่: ${createdDate}\n\n` +
+              `ติดตามสถานะได้โดยพิมพ์:\n"ตรวจสอบ #${ticket.id}"`,
+          },
+        ]);
+        console.log(`[TICKET] Auto-created #${ticket.id} for "${displayName}" keyword="${matchedKeyword}"`);
+      } catch {
+        await sendLineMessage(userId, [
+          { type: 'text', text: 'ขออภัยครับ ไม่สามารถเปิด Ticket ได้ในขณะนี้ กรุณาลองใหม่อีกครั้ง' },
+        ]);
+      }
+      continue;
+    }
+
     // ตัวอย่าง: ลูกค้าพิมพ์ "ตรวจสอบ #0042" → ดึงสถานะ Ticket
     const trackMatch = text.match(/ตรวจสอบ\s*#?(\d+)/);
     if (trackMatch) {
@@ -93,14 +162,22 @@ app.post('/webhook/line', async (req, res) => {
       try {
         const res2 = await axios.get(`${TICKET_API_BASE_URL}/tickets/${ticketId}`);
         const ticket = res2.data;
+        const updatedDate  = new Date(ticket.updatedAt).toLocaleString('th-TH');
+        const resolvedDate = ticket.resolvedAt ? new Date(ticket.resolvedAt).toLocaleString('th-TH') : '-';
+        const isClosed     = ticket.status === 'closed';
         await sendLineMessage(userId, [
           {
             type: 'text',
             text:
               `📋 สถานะ Ticket #${ticket.id}\n` +
-              `หัวข้อ: ${ticket.title}\n` +
-              `สถานะ: ${translateStatus(ticket.status)}\n` +
-              `อัปเดตล่าสุด: ${new Date(ticket.updatedAt).toLocaleString('th-TH')}`,
+              `🔴 ปัญหา: ${ticket.title}\n` +
+              `⚙️ สถานะ: ${translateStatus(ticket.status)}\n` +
+              `🔧 วิธีการแก้ไข: ${ticket.resolution || '-'}\n` +
+              `👨‍💻 ผู้ดำเนินการแก้ไข: ${ticket.resolvedBy || '-'}\n` +
+              (isClosed
+                ? `✅ วันที่แก้ไขเสร็จ: ${resolvedDate}\n`
+                : `🕐 อัปเดตล่าสุด: ${updatedDate}\n`) +
+              `\nติดตามสถานะได้โดยพิมพ์:\n"ตรวจสอบ #${ticket.id}"`,
           },
         ]);
       } catch {

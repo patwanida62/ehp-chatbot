@@ -1,0 +1,7 @@
+{
+  "service": "EHP CIS",
+  "category": "ปัญหาการใช้งานทั่วไป",
+  "subCategory": "การใช้งานทั่วไป",
+  "defaultStatus": "กำลังดำเนินการ",
+  "welcomeMessage": "รับเรื่องแล้วครับ คุณ"
+}

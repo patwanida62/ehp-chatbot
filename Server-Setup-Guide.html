@@ -1,0 +1,627 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Server Setup Guide — EHP LINE Chatbot</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Segoe UI', sans-serif; background: #f5f7fa; color: #333; line-height: 1.6; }
+
+    header {
+      background: linear-gradient(135deg, #06c755, #05a847);
+      color: white; padding: 40px 48px;
+    }
+    header h1 { font-size: 26px; font-weight: 700; margin-bottom: 6px; }
+    header p  { font-size: 14px; opacity: 0.85; }
+    .meta { display: flex; gap: 12px; margin-top: 16px; flex-wrap: wrap; }
+    .meta span {
+      background: rgba(255,255,255,0.2); padding: 4px 14px;
+      border-radius: 99px; font-size: 12px; font-weight: 600;
+    }
+
+    .container { max-width: 960px; margin: 0 auto; padding: 40px 24px 60px; }
+
+    /* OS Tabs */
+    .os-tabs { display: flex; gap: 8px; margin-bottom: 32px; }
+    .os-btn {
+      padding: 10px 28px; border: 2px solid #ddd;
+      border-radius: 8px; background: white; font-size: 14px;
+      font-weight: 600; cursor: pointer; transition: all 0.2s; color: #666;
+    }
+    .os-btn.active { border-color: #06c755; color: #06c755; background: #e8f8ee; }
+
+    .os-panel { display: none; }
+    .os-panel.active { display: block; }
+
+    /* Steps */
+    .steps { display: flex; flex-direction: column; gap: 24px; }
+
+    .step-card {
+      background: white; border-radius: 14px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.07);
+      overflow: hidden;
+    }
+
+    .step-header {
+      display: flex; align-items: center; gap: 16px;
+      padding: 18px 24px; border-bottom: 1px solid #f0f0f0;
+    }
+    .step-num {
+      width: 36px; height: 36px; border-radius: 50%;
+      background: #06c755; color: white;
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 700; font-size: 15px; flex-shrink: 0;
+    }
+    .step-title { font-size: 16px; font-weight: 700; color: #111; }
+    .step-subtitle { font-size: 13px; color: #888; margin-top: 2px; }
+    .step-badge {
+      margin-left: auto; padding: 4px 12px;
+      border-radius: 99px; font-size: 11px; font-weight: 700;
+    }
+    .badge-required { background: #ffeaea; color: #e53935; }
+    .badge-optional { background: #f0f0f0;  color: #888; }
+
+    .step-body { padding: 20px 24px; }
+    .step-body p { font-size: 14px; color: #555; margin-bottom: 12px; }
+
+    pre {
+      background: #1e1e2e; color: #cdd6f4;
+      border-radius: 8px; padding: 14px 18px;
+      font-size: 13px; overflow-x: auto; line-height: 1.8;
+      margin-bottom: 12px;
+    }
+    .cm  { color: #6c7086; }
+    .kw  { color: #89b4fa; }
+    .str { color: #a6e3a1; }
+    .num { color: #fab387; }
+
+    .file-list { display: flex; flex-direction: column; gap: 6px; margin-bottom: 12px; }
+    .file-item {
+      display: flex; align-items: center; gap: 10px;
+      padding: 8px 12px; border-radius: 8px;
+      font-size: 13px; font-family: monospace;
+    }
+    .file-item.include { background: #e8f8ee; color: #2d6a4f; }
+    .file-item.exclude { background: #ffeaea; color: #c0392b; text-decoration: line-through; opacity: 0.7; }
+    .file-icon { font-size: 15px; }
+
+    .info-box {
+      border-radius: 8px; padding: 12px 16px;
+      font-size: 13px; margin-bottom: 12px;
+    }
+    .info-box.yellow { background: #fffbea; border-left: 4px solid #f59e0b; color: #78350f; }
+    .info-box.blue   { background: #eff6ff; border-left: 4px solid #3b82f6; color: #1e3a5f; }
+    .info-box.green  { background: #e8f8ee; border-left: 4px solid #06c755; color: #1a4731; }
+
+    table { width: 100%; border-collapse: collapse; font-size: 13px; margin-bottom: 12px; }
+    th { text-align: left; padding: 8px 12px; background: #f8f9fa; color: #666; font-weight: 600; border-bottom: 2px solid #eee; }
+    td { padding: 8px 12px; border-bottom: 1px solid #f0f0f0; }
+    tr:last-child td { border-bottom: none; }
+    .td-code { font-family: monospace; color: #d63031; }
+
+    .checklist { display: flex; flex-direction: column; gap: 8px; }
+    .check-item {
+      display: flex; align-items: flex-start; gap: 10px;
+      padding: 10px 14px; background: #f8f9fa;
+      border-radius: 8px; font-size: 13px;
+    }
+    .check-item input[type=checkbox] { margin-top: 2px; width: 16px; height: 16px; accent-color: #06c755; cursor: pointer; }
+
+    .service-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+    .service-card {
+      background: #f8f9fa; border-radius: 10px;
+      padding: 14px; text-align: center;
+    }
+    .service-card .port { font-size: 22px; font-weight: 700; color: #06c755; }
+    .service-card .name { font-size: 13px; font-weight: 600; color: #333; margin-top: 4px; }
+    .service-card .cmd  { font-size: 11px; color: #888; font-family: monospace; margin-top: 4px; }
+
+    footer {
+      text-align: center; padding: 32px;
+      font-size: 13px; color: #aaa;
+      border-top: 1px solid #eee; margin-top: 20px;
+    }
+
+    @media print {
+      .os-tabs { display: none; }
+      .os-panel { display: block !important; }
+      header { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>🚀 Server Setup Guide — EHP LINE Chatbot</h1>
+  <p>คู่มือติดตั้งระบบ LINE Chatbot บน Server ใหม่</p>
+  <div class="meta">
+    <span>Version 1.0</span>
+    <span>Node.js 18+</span>
+    <span>PM2</span>
+    <span>Nginx / IIS</span>
+    <span>11 พฤษภาคม 2569</span>
+  </div>
+</header>
+
+<div class="container">
+
+  <!-- OS Selector -->
+  <div class="os-tabs">
+    <button class="os-btn" onclick="switchOS('linux', this)">🐧 Ubuntu / Linux</button>
+    <button class="os-btn active" onclick="switchOS('windows', this)">🪟 Windows Server</button>
+  </div>
+
+  <!-- ====== LINUX ====== -->
+  <div id="os-linux" class="os-panel">
+    <div class="steps">
+
+      <!-- Step 1 -->
+      <div class="step-card">
+        <div class="step-header">
+          <div class="step-num">1</div>
+          <div>
+            <div class="step-title">ติดตั้ง Node.js</div>
+            <div class="step-subtitle">ต้องการ Node.js v18 ขึ้นไป</div>
+          </div>
+          <span class="step-badge badge-required">REQUIRED</span>
+        </div>
+        <div class="step-body">
+          <pre><span class="cm"># เพิ่ม NodeSource repository</span>
+curl -fsSL https://deb.nodesource.com/setup_18.x | sudo -E bash -
+
+<span class="cm"># ติดตั้ง Node.js</span>
+sudo apt-get install -y nodejs
+
+<span class="cm"># ตรวจสอบ version</span>
+node -v
+npm -v</pre>
+        </div>
+      </div>
+
+      <!-- Step 2 -->
+      <div class="step-card">
+        <div class="step-header">
+          <div class="step-num">2</div>
+          <div>
+            <div class="step-title">คัดลอกไฟล์โปรเจกต์ขึ้น Server</div>
+            <div class="step-subtitle">ใช้ Git clone หรือ copy ไฟล์ตรงๆ</div>
+          </div>
+          <span class="step-badge badge-required">REQUIRED</span>
+        </div>
+        <div class="step-body">
+          <p><strong>วิธีที่ 1 — Git Clone (แนะนำ)</strong></p>
+          <pre><span class="cm"># ติดตั้ง Git ถ้ายังไม่มี</span>
+sudo apt-get install -y git
+
+<span class="cm"># Clone โปรเจกต์</span>
+git clone https://github.com/YOUR_USERNAME/ehp-chatbot.git
+cd ehp-chatbot</pre>
+
+          <p><strong>วิธีที่ 2 — Copy ไฟล์ผ่าน SFTP / SCP</strong></p>
+          <p>ไฟล์ที่ต้องคัดลอก:</p>
+          <div class="file-list">
+            <div class="file-item include"><span class="file-icon">✅</span> server.js</div>
+            <div class="file-item include"><span class="file-icon">✅</span> ticket-api.js</div>
+            <div class="file-item include"><span class="file-icon">✅</span> package.json</div>
+            <div class="file-item include"><span class="file-icon">✅</span> package-lock.json</div>
+            <div class="file-item include"><span class="file-icon">✅</span> keywords.json</div>
+            <div class="file-item include"><span class="file-icon">✅</span> settings.json</div>
+            <div class="file-item include"><span class="file-icon">✅</span> admin.html</div>
+            <div class="file-item include"><span class="file-icon">✅</span> .env.example</div>
+            <div class="file-item exclude"><span class="file-icon">❌</span> .env &nbsp;&nbsp;(สร้างใหม่บน Server)</div>
+            <div class="file-item exclude"><span class="file-icon">❌</span> node_modules/ &nbsp;&nbsp;(ติดตั้งใหม่)</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Step 3 -->
+      <div class="step-card">
+        <div class="step-header">
+          <div class="step-num">3</div>
+          <div>
+            <div class="step-title">ติดตั้ง Dependencies</div>
+            <div class="step-subtitle">npm install จะสร้าง node_modules ให้</div>
+          </div>
+          <span class="step-badge badge-required">REQUIRED</span>
+        </div>
+        <div class="step-body">
+          <pre>cd /path/to/ehp-chatbot
+npm install</pre>
+        </div>
+      </div>
+
+      <!-- Step 4 -->
+      <div class="step-card">
+        <div class="step-header">
+          <div class="step-num">4</div>
+          <div>
+            <div class="step-title">สร้างและตั้งค่าไฟล์ .env</div>
+            <div class="step-subtitle">ใส่ค่า Token และ Secret จริง</div>
+          </div>
+          <span class="step-badge badge-required">REQUIRED</span>
+        </div>
+        <div class="step-body">
+          <pre><span class="cm"># Copy จาก template</span>
+cp .env.example .env
+
+<span class="cm"># แก้ไขด้วย nano หรือ vim</span>
+nano .env</pre>
+          <p>ใส่ค่าในไฟล์ .env:</p>
+          <pre><span class="kw">LINE_CHANNEL_ACCESS_TOKEN</span>=<span class="str">gNmfoymThqDx...</span>
+<span class="kw">LINE_CHANNEL_SECRET</span>=<span class="str">9d9f0d52959718d2bf8c7049253dfbfe</span>
+<span class="kw">TICKET_API_BASE_URL</span>=<span class="str">http://localhost:4000</span>
+<span class="kw">PORT</span>=<span class="num">3000</span></pre>
+          <div class="info-box yellow">⚠️ ถ้าต้องการเชื่อมกับ Ticket System จริง ให้เปลี่ยน TICKET_API_BASE_URL เป็น URL ของระบบนั้น</div>
+        </div>
+      </div>
+
+      <!-- Step 5 -->
+      <div class="step-card">
+        <div class="step-header">
+          <div class="step-num">5</div>
+          <div>
+            <div class="step-title">ติดตั้งและตั้งค่า PM2</div>
+            <div class="step-subtitle">รัน Process ตลอด 24 ชั่วโมง และ auto-start เมื่อ reboot</div>
+          </div>
+          <span class="step-badge badge-required">REQUIRED</span>
+        </div>
+        <div class="step-body">
+          <pre><span class="cm"># ติดตั้ง PM2 แบบ global</span>
+sudo npm install -g pm2
+
+<span class="cm"># รัน Bot Server</span>
+pm2 start server.js --name "ehp-bot"
+
+<span class="cm"># รัน Ticket API</span>
+pm2 start ticket-api.js --name "ehp-ticket-api"
+
+<span class="cm"># ตั้งให้ start อัตโนมัติเมื่อ reboot</span>
+pm2 startup
+pm2 save
+
+<span class="cm"># ดูสถานะ</span>
+pm2 status
+pm2 logs ehp-bot</pre>
+        </div>
+      </div>
+
+      <!-- Step 6 -->
+      <div class="step-card">
+        <div class="step-header">
+          <div class="step-num">6</div>
+          <div>
+            <div class="step-title">ติดตั้ง Nginx + SSL Certificate</div>
+            <div class="step-subtitle">LINE บังคับใช้ HTTPS — ต้องมี Domain Name</div>
+          </div>
+          <span class="step-badge badge-required">REQUIRED</span>
+        </div>
+        <div class="step-body">
+          <pre><span class="cm"># ติดตั้ง Nginx และ Certbot</span>
+sudo apt install -y nginx certbot python3-certbot-nginx
+
+<span class="cm"># ขอ SSL Certificate ฟรีจาก Let's Encrypt</span>
+sudo certbot --nginx -d your-domain.com</pre>
+
+          <p>สร้างไฟล์ Config Nginx:</p>
+          <pre>sudo nano /etc/nginx/sites-available/ehp-bot</pre>
+          <pre><span class="cm"># วางเนื้อหานี้ในไฟล์</span>
+server {
+    listen 443 ssl;
+    server_name <span class="str">your-domain.com</span>;
+
+    location /webhook/line {
+        proxy_pass http://localhost:<span class="num">3000</span>;
+        proxy_set_header Host $host;
+    }
+    location /notify/ {
+        proxy_pass http://localhost:<span class="num">3000</span>;
+    }
+    location / {
+        proxy_pass http://localhost:<span class="num">4000</span>;
+    }
+}</pre>
+          <pre><span class="cm"># เปิดใช้งาน Config</span>
+sudo ln -s /etc/nginx/sites-available/ehp-bot /etc/nginx/sites-enabled/
+sudo nginx -t
+sudo systemctl reload nginx</pre>
+        </div>
+      </div>
+
+      <!-- Step 7 -->
+      <div class="step-card">
+        <div class="step-header">
+          <div class="step-num">7</div>
+          <div>
+            <div class="step-title">อัปเดต Webhook URL ใน LINE Console</div>
+            <div class="step-subtitle">เปลี่ยนจาก ngrok เป็น Domain จริง</div>
+          </div>
+          <span class="step-badge badge-required">REQUIRED</span>
+        </div>
+        <div class="step-body">
+          <p>ไปที่ <strong>developers.line.biz</strong> → Channel <strong>PAT OA</strong> → แท็บ <strong>Messaging API</strong></p>
+          <pre><span class="cm"># ใส่ Webhook URL ใหม่</span>
+https://your-domain.com/webhook/line</pre>
+          <p>กด <strong>Update</strong> → กด <strong>Verify</strong> → ต้องขึ้น ✅ Success</p>
+        </div>
+      </div>
+
+      <!-- Step 8 -->
+      <div class="step-card">
+        <div class="step-header">
+          <div class="step-num">8</div>
+          <div>
+            <div class="step-title">ทดสอบระบบ</div>
+            <div class="step-subtitle">ตรวจสอบว่าทุกส่วนทำงานได้ปกติ</div>
+          </div>
+          <span class="step-badge badge-required">REQUIRED</span>
+        </div>
+        <div class="step-body">
+          <div class="checklist">
+            <label class="check-item"><input type="checkbox"> พิมข้อความใน LINE แล้ว Bot ตอบกลับ</label>
+            <label class="check-item"><input type="checkbox"> พิม "เข้าระบบไม่ได้" → Bot เปิด Ticket อัตโนมัติ</label>
+            <label class="check-item"><input type="checkbox"> พิม "ตรวจสอบ #1" → Bot แสดงสถานะ</label>
+            <label class="check-item"><input type="checkbox"> เปิดหน้า Admin: https://your-domain.com/admin</label>
+            <label class="check-item"><input type="checkbox"> pm2 status แสดงสถานะ online ทั้ง 2 process</label>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /steps -->
+  </div><!-- /linux -->
+
+  <!-- ====== WINDOWS ====== -->
+  <div id="os-windows" class="os-panel active">
+    <div class="steps">
+
+      <!-- Step 1 -->
+      <div class="step-card">
+        <div class="step-header">
+          <div class="step-num">1</div>
+          <div>
+            <div class="step-title">ติดตั้ง Node.js</div>
+            <div class="step-subtitle">ต้องการ Node.js v18 ขึ้นไป</div>
+          </div>
+          <span class="step-badge badge-required">REQUIRED</span>
+        </div>
+        <div class="step-body">
+          <p>1. ดาวน์โหลด <strong>Node.js LTS</strong> จาก <strong>nodejs.org</strong></p>
+          <p>2. ติดตั้งตามปกติ (Next → Next → Install)</p>
+          <p>3. เปิด PowerShell ตรวจสอบ:</p>
+          <pre>node -v
+npm -v</pre>
+        </div>
+      </div>
+
+      <!-- Step 2 -->
+      <div class="step-card">
+        <div class="step-header">
+          <div class="step-num">2</div>
+          <div>
+            <div class="step-title">คัดลอกไฟล์โปรเจกต์ขึ้น Server</div>
+            <div class="step-subtitle">ใช้ Git หรือ Copy ไฟล์ผ่าน Network</div>
+          </div>
+          <span class="step-badge badge-required">REQUIRED</span>
+        </div>
+        <div class="step-body">
+          <p><strong>วิธีที่ 1 — Git Clone</strong></p>
+          <pre>git clone https://github.com/YOUR_USERNAME/ehp-chatbot.git
+cd ehp-chatbot</pre>
+          <p><strong>วิธีที่ 2 — Copy ไฟล์</strong></p>
+          <p>วางไฟล์ไว้ที่ <code>C:\EHP-Chatbot\</code></p>
+          <div class="file-list">
+            <div class="file-item include"><span class="file-icon">✅</span> server.js</div>
+            <div class="file-item include"><span class="file-icon">✅</span> ticket-api.js</div>
+            <div class="file-item include"><span class="file-icon">✅</span> package.json</div>
+            <div class="file-item include"><span class="file-icon">✅</span> keywords.json</div>
+            <div class="file-item include"><span class="file-icon">✅</span> settings.json</div>
+            <div class="file-item include"><span class="file-icon">✅</span> admin.html</div>
+            <div class="file-item exclude"><span class="file-icon">❌</span> .env &nbsp;&nbsp;(สร้างใหม่บน Server)</div>
+            <div class="file-item exclude"><span class="file-icon">❌</span> node_modules\ &nbsp;&nbsp;(ติดตั้งใหม่)</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Step 3 -->
+      <div class="step-card">
+        <div class="step-header">
+          <div class="step-num">3</div>
+          <div>
+            <div class="step-title">ติดตั้ง Dependencies</div>
+            <div class="step-subtitle">รันใน PowerShell</div>
+          </div>
+          <span class="step-badge badge-required">REQUIRED</span>
+        </div>
+        <div class="step-body">
+          <pre>cd C:\EHP-Chatbot
+npm install</pre>
+        </div>
+      </div>
+
+      <!-- Step 4 -->
+      <div class="step-card">
+        <div class="step-header">
+          <div class="step-num">4</div>
+          <div>
+            <div class="step-title">สร้างและตั้งค่าไฟล์ .env</div>
+            <div class="step-subtitle">ใส่ค่า Token และ Secret จริง</div>
+          </div>
+          <span class="step-badge badge-required">REQUIRED</span>
+        </div>
+        <div class="step-body">
+          <pre><span class="cm"># Copy จาก template</span>
+copy .env.example .env
+
+<span class="cm"># เปิดแก้ไขด้วย Notepad</span>
+notepad .env</pre>
+          <pre><span class="kw">LINE_CHANNEL_ACCESS_TOKEN</span>=<span class="str">gNmfoymThqDx...</span>
+<span class="kw">LINE_CHANNEL_SECRET</span>=<span class="str">9d9f0d52959718d2bf8c7049253dfbfe</span>
+<span class="kw">TICKET_API_BASE_URL</span>=<span class="str">http://localhost:4000</span>
+<span class="kw">PORT</span>=<span class="num">3000</span></pre>
+        </div>
+      </div>
+
+      <!-- Step 5 -->
+      <div class="step-card">
+        <div class="step-header">
+          <div class="step-num">5</div>
+          <div>
+            <div class="step-title">ติดตั้งและตั้งค่า PM2</div>
+            <div class="step-subtitle">รัน Process ตลอด 24 ชั่วโมง</div>
+          </div>
+          <span class="step-badge badge-required">REQUIRED</span>
+        </div>
+        <div class="step-body">
+          <pre><span class="cm"># ติดตั้ง PM2</span>
+npm install -g pm2
+npm install -g pm2-windows-startup
+
+<span class="cm"># ตั้ง auto-start เมื่อ Windows boot</span>
+pm2-startup install
+
+<span class="cm"># รัน Bot Server</span>
+pm2 start server.js --name "ehp-bot"
+
+<span class="cm"># รัน Ticket API</span>
+pm2 start ticket-api.js --name "ehp-ticket-api"
+
+<span class="cm"># บันทึก config</span>
+pm2 save
+
+<span class="cm"># ดูสถานะ</span>
+pm2 status</pre>
+        </div>
+      </div>
+
+      <!-- Step 6 -->
+      <div class="step-card">
+        <div class="step-header">
+          <div class="step-num">6</div>
+          <div>
+            <div class="step-title">ตั้งค่า IIS Reverse Proxy + SSL</div>
+            <div class="step-subtitle">LINE บังคับใช้ HTTPS — ต้องมี Domain Name</div>
+          </div>
+          <span class="step-badge badge-required">REQUIRED</span>
+        </div>
+        <div class="step-body">
+          <div class="info-box blue">
+            💡 ต้องติดตั้ง IIS + <strong>Application Request Routing (ARR)</strong> + <strong>URL Rewrite Module</strong> ก่อน
+          </div>
+          <p>1. เปิด <strong>IIS Manager</strong> → Sites → Add Website</p>
+          <p>2. ตั้ง Binding: HTTPS port 443 พร้อม SSL Certificate</p>
+          <p>3. เพิ่ม web.config ในโฟลเดอร์ IIS site:</p>
+          <pre>&lt;configuration&gt;
+  &lt;system.webServer&gt;
+    &lt;rewrite&gt;
+      &lt;rules&gt;
+        &lt;rule name="webhook"&gt;
+          &lt;match url="^(webhook|notify)/(.*)" /&gt;
+          &lt;action type="Rewrite"
+            url="http://localhost:<span class="num">3000</span>/{R:0}" /&gt;
+        &lt;/rule&gt;
+        &lt;rule name="api"&gt;
+          &lt;match url="^(.*)" /&gt;
+          &lt;action type="Rewrite"
+            url="http://localhost:<span class="num">4000</span>/{R:0}" /&gt;
+        &lt;/rule&gt;
+      &lt;/rules&gt;
+    &lt;/rewrite&gt;
+  &lt;/system.webServer&gt;
+&lt;/configuration&gt;</pre>
+          <div class="info-box yellow">⚠️ SSL Certificate สามารถขอจาก <strong>Let's Encrypt (win-acme)</strong> ฟรี หรือซื้อจาก CA ทั่วไป</div>
+        </div>
+      </div>
+
+      <!-- Step 7 -->
+      <div class="step-card">
+        <div class="step-header">
+          <div class="step-num">7</div>
+          <div>
+            <div class="step-title">อัปเดต Webhook URL ใน LINE Console</div>
+            <div class="step-subtitle">เปลี่ยนจาก ngrok เป็น Domain จริง</div>
+          </div>
+          <span class="step-badge badge-required">REQUIRED</span>
+        </div>
+        <div class="step-body">
+          <p>ไปที่ <strong>developers.line.biz</strong> → Channel <strong>PAT OA</strong> → แท็บ <strong>Messaging API</strong></p>
+          <pre>https://your-domain.com/webhook/line</pre>
+          <p>กด <strong>Update</strong> → กด <strong>Verify</strong> → ต้องขึ้น ✅ Success</p>
+        </div>
+      </div>
+
+      <!-- Step 8 -->
+      <div class="step-card">
+        <div class="step-header">
+          <div class="step-num">8</div>
+          <div>
+            <div class="step-title">ทดสอบระบบ</div>
+            <div class="step-subtitle">ตรวจสอบว่าทุกส่วนทำงานได้ปกติ</div>
+          </div>
+          <span class="step-badge badge-required">REQUIRED</span>
+        </div>
+        <div class="step-body">
+          <div class="checklist">
+            <label class="check-item"><input type="checkbox"> พิมข้อความใน LINE แล้ว Bot ตอบกลับ</label>
+            <label class="check-item"><input type="checkbox"> พิม "เข้าระบบไม่ได้" → Bot เปิด Ticket อัตโนมัติ</label>
+            <label class="check-item"><input type="checkbox"> พิม "ตรวจสอบ #1" → Bot แสดงสถานะ</label>
+            <label class="check-item"><input type="checkbox"> เปิดหน้า Admin: https://your-domain.com/admin</label>
+            <label class="check-item"><input type="checkbox"> pm2 status แสดงสถานะ online ทั้ง 2 process</label>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /steps -->
+  </div><!-- /windows -->
+
+  <!-- Summary -->
+  <div style="margin-top: 40px;">
+    <div class="step-card">
+      <div class="step-header">
+        <div style="font-size:20px;">📊</div>
+        <div>
+          <div class="step-title">สรุป Services ที่รันบน Server</div>
+          <div class="step-subtitle">หลังติดตั้งเสร็จจะมี 3 services</div>
+        </div>
+      </div>
+      <div class="step-body">
+        <div class="service-grid">
+          <div class="service-card">
+            <div class="port">3000</div>
+            <div class="name">Bot Webhook</div>
+            <div class="cmd">pm2: ehp-bot</div>
+          </div>
+          <div class="service-card">
+            <div class="port">4000</div>
+            <div class="name">Ticket API + Admin</div>
+            <div class="cmd">pm2: ehp-ticket-api</div>
+          </div>
+          <div class="service-card">
+            <div class="port">443</div>
+            <div class="name">HTTPS (Nginx/IIS)</div>
+            <div class="cmd">Reverse Proxy</div>
+          </div>
+        </div>
+        <div class="info-box green" style="margin-top:16px;">
+          ✅ หลังติดตั้งเสร็จ ไม่ต้องรัน ngrok อีกต่อไป — Server รันตลอด 24 ชั่วโมงผ่าน PM2
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /container -->
+
+<footer>
+  EHP LINE Chatbot — Server Setup Guide v1.0 | 11 พฤษภาคม 2569
+</footer>
+
+<script>
+  function switchOS(name, btn) {
+    document.querySelectorAll('.os-panel').forEach(p => p.classList.remove('active'));
+    document.querySelectorAll('.os-btn').forEach(b => b.classList.remove('active'));
+    document.getElementById('os-' + name).classList.add('active');
+    btn.classList.add('active');
+  }
+</script>
+
+</body>
+</html>

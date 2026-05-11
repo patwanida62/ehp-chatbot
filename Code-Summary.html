@@ -1,0 +1,652 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Code Summary — EHP LINE Chatbot</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Segoe UI', sans-serif; background: #f5f7fa; color: #333; line-height: 1.6; }
+
+    header {
+      background: linear-gradient(135deg, #06c755, #04a040);
+      color: white; padding: 40px 48px;
+    }
+    header h1 { font-size: 26px; font-weight: 700; margin-bottom: 6px; }
+    header p  { font-size: 14px; opacity: 0.85; }
+    .meta { display: flex; gap: 10px; margin-top: 16px; flex-wrap: wrap; }
+    .meta span {
+      background: rgba(255,255,255,0.2); padding: 4px 14px;
+      border-radius: 99px; font-size: 12px; font-weight: 600;
+    }
+
+    .container { max-width: 1100px; margin: 0 auto; padding: 40px 24px 60px; }
+
+    /* File tabs */
+    .file-tabs {
+      display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 0;
+    }
+    .file-tab {
+      padding: 10px 18px; border: none;
+      border-radius: 8px 8px 0 0;
+      background: #dde1e7; color: #555;
+      font-size: 13px; font-weight: 600;
+      cursor: pointer; transition: all 0.2s;
+      font-family: monospace;
+    }
+    .file-tab.active { background: #1e1e2e; color: #cdd6f4; }
+
+    .file-panel { display: none; }
+    .file-panel.active { display: block; }
+
+    /* Code card */
+    .code-card {
+      background: #1e1e2e;
+      border-radius: 0 12px 12px 12px;
+      overflow: hidden;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+      margin-bottom: 32px;
+    }
+    .code-header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 14px 20px; background: #181825;
+      border-bottom: 1px solid #313244;
+    }
+    .code-header-left { display: flex; align-items: center; gap: 10px; }
+    .dot { width: 12px; height: 12px; border-radius: 50%; }
+    .dot-red    { background: #f38ba8; }
+    .dot-yellow { background: #f9e2af; }
+    .dot-green  { background: #a6e3a1; }
+    .file-name { font-family: monospace; font-size: 13px; color: #cdd6f4; margin-left: 8px; }
+    .line-count { font-size: 12px; color: #6c7086; }
+
+    pre {
+      padding: 20px 24px;
+      font-size: 13px;
+      line-height: 1.8;
+      overflow-x: auto;
+      color: #cdd6f4;
+      tab-size: 2;
+    }
+
+    /* Syntax colors — Catppuccin Mocha */
+    .c-comment  { color: #6c7086; font-style: italic; }
+    .c-keyword  { color: #cba6f7; }
+    .c-string   { color: #a6e3a1; }
+    .c-number   { color: #fab387; }
+    .c-func     { color: #89b4fa; }
+    .c-var      { color: #cdd6f4; }
+    .c-prop     { color: #89dceb; }
+    .c-const    { color: #f9e2af; }
+    .c-tag      { color: #f38ba8; }
+    .c-bracket  { color: #94e2d5; }
+
+    /* Section summary */
+    .section-label {
+      font-size: 11px; font-weight: 700; color: #06c755;
+      text-transform: uppercase; letter-spacing: 1.5px;
+      margin-bottom: 12px; margin-top: 32px;
+      display: flex; align-items: center; gap: 8px;
+    }
+    .section-label::after {
+      content: ''; flex: 1; height: 1px; background: #e0e0e0;
+    }
+
+    /* Summary cards */
+    .summary-grid { display: grid; grid-template-columns: repeat(2,1fr); gap: 16px; margin-bottom: 32px; }
+    .summary-card {
+      background: white; border-radius: 12px;
+      padding: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+    }
+    .summary-card h3 {
+      font-size: 13px; font-weight: 700; color: #06c755;
+      margin-bottom: 12px; display: flex; align-items: center; gap: 8px;
+    }
+    .summary-card ul { padding-left: 18px; }
+    .summary-card li { font-size: 13px; color: #555; margin-bottom: 6px; }
+    .summary-card code {
+      background: #f0f0f0; padding: 1px 6px;
+      border-radius: 4px; font-size: 12px; color: #d63031;
+    }
+
+    /* Route table */
+    .route-card {
+      background: white; border-radius: 12px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+      overflow: hidden; margin-bottom: 16px;
+    }
+    table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    th { text-align: left; padding: 10px 16px; background: #f8f9fa; color: #666; font-weight: 600; border-bottom: 2px solid #eee; }
+    td { padding: 10px 16px; border-bottom: 1px solid #f0f0f0; }
+    tr:last-child td { border-bottom: none; }
+    .badge {
+      display: inline-block; padding: 3px 10px;
+      border-radius: 6px; font-size: 11px;
+      font-weight: 700; font-family: monospace;
+    }
+    .m-post  { background: #e8f8ee; color: #06c755; }
+    .m-get   { background: #eff6ff; color: #1976d2; }
+    .m-patch { background: #fff7ed; color: #ea580c; }
+    .m-del   { background: #fef2f2; color: #dc2626; }
+    .m-put   { background: #faf5ff; color: #7c3aed; }
+    .td-code { font-family: monospace; color: #d63031; font-size: 12px; }
+
+    footer {
+      text-align: center; padding: 32px;
+      font-size: 13px; color: #aaa;
+      border-top: 1px solid #eee;
+    }
+
+    @media print {
+      .file-tabs { display: none; }
+      .file-panel { display: block !important; }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>💻 Code Summary — EHP LINE Chatbot</h1>
+  <p>สรุป Source Code ทั้งหมดที่พัฒนาในโปรเจกต์นี้</p>
+  <div class="meta">
+    <span>2 ไฟล์หลัก</span>
+    <span>server.js — 277 บรรทัด</span>
+    <span>ticket-api.js — 173 บรรทัด</span>
+    <span>Node.js + Express</span>
+    <span>11 พฤษภาคม 2569</span>
+  </div>
+</header>
+
+<div class="container">
+
+  <!-- Route summary -->
+  <div class="section-label">สรุป Routes ทั้งหมด</div>
+  <div class="summary-grid">
+    <div class="summary-card">
+      <h3>🤖 server.js — Bot Webhook (port 3000)</h3>
+      <ul>
+        <li><code>POST /webhook/line</code> รับข้อความจาก LINE</li>
+        <li><code>POST /notify/ticket-opened</code> แจ้งเตือนเปิด Ticket</li>
+        <li><code>POST /notify/ticket-closed</code> แจ้งเตือนปิด Ticket</li>
+      </ul>
+    </div>
+    <div class="summary-card">
+      <h3>🗄️ ticket-api.js — Ticket API (port 4000)</h3>
+      <ul>
+        <li><code>GET/POST /tickets</code> ดึงรายการ / สร้าง Ticket</li>
+        <li><code>GET /tickets/:id</code> ดึง Ticket เดียว</li>
+        <li><code>PATCH /tickets/:id/status</code> อัปเดตสถานะ</li>
+        <li><code>GET/POST/DELETE /keywords</code> จัดการ Keyword</li>
+        <li><code>GET/PUT /settings</code> จัดการ Settings</li>
+        <li><code>GET /admin</code> หน้า Admin UI</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- Route detail table -->
+  <div class="section-label">รายละเอียด Routes ทั้งหมด</div>
+  <div class="route-card">
+    <table>
+      <tr>
+        <th>Method</th><th>Route</th><th>ไฟล์</th><th>หน้าที่</th>
+      </tr>
+      <tr>
+        <td><span class="badge m-post">POST</span></td>
+        <td class="td-code">/webhook/line</td>
+        <td>server.js</td>
+        <td>รับ Webhook จาก LINE — ตรวจ keyword / ตรวจสอบ Ticket</td>
+      </tr>
+      <tr>
+        <td><span class="badge m-post">POST</span></td>
+        <td class="td-code">/notify/ticket-opened</td>
+        <td>server.js</td>
+        <td>ระบบ Ticket เรียก → Bot ส่งข้อความแจ้งลูกค้า</td>
+      </tr>
+      <tr>
+        <td><span class="badge m-post">POST</span></td>
+        <td class="td-code">/notify/ticket-closed</td>
+        <td>server.js</td>
+        <td>ระบบ Ticket เรียก → Bot แจ้งเตือนปิด Ticket</td>
+      </tr>
+      <tr>
+        <td><span class="badge m-get">GET</span></td>
+        <td class="td-code">/tickets</td>
+        <td>ticket-api.js</td>
+        <td>ดึง Ticket ทั้งหมด</td>
+      </tr>
+      <tr>
+        <td><span class="badge m-post">POST</span></td>
+        <td class="td-code">/tickets</td>
+        <td>ticket-api.js</td>
+        <td>สร้าง Ticket ใหม่</td>
+      </tr>
+      <tr>
+        <td><span class="badge m-get">GET</span></td>
+        <td class="td-code">/tickets/:id</td>
+        <td>ticket-api.js</td>
+        <td>ดึง Ticket เดียว + สถานะ + วิธีแก้ไข + ผู้ดำเนินการ</td>
+      </tr>
+      <tr>
+        <td><span class="badge m-patch">PATCH</span></td>
+        <td class="td-code">/tickets/:id/status</td>
+        <td>ticket-api.js</td>
+        <td>อัปเดตสถานะ + วิธีแก้ไข + ผู้ดำเนินการ + วันที่แก้ไข</td>
+      </tr>
+      <tr>
+        <td><span class="badge m-del">DELETE</span></td>
+        <td class="td-code">/tickets/:id</td>
+        <td>ticket-api.js</td>
+        <td>ลบ Ticket</td>
+      </tr>
+      <tr>
+        <td><span class="badge m-get">GET</span></td>
+        <td class="td-code">/keywords</td>
+        <td>ticket-api.js</td>
+        <td>ดึง Keyword ทั้งหมด</td>
+      </tr>
+      <tr>
+        <td><span class="badge m-post">POST</span></td>
+        <td class="td-code">/keywords</td>
+        <td>ticket-api.js</td>
+        <td>เพิ่ม Keyword ใหม่</td>
+      </tr>
+      <tr>
+        <td><span class="badge m-del">DELETE</span></td>
+        <td class="td-code">/keywords/:index</td>
+        <td>ticket-api.js</td>
+        <td>ลบ Keyword</td>
+      </tr>
+      <tr>
+        <td><span class="badge m-get">GET</span></td>
+        <td class="td-code">/settings</td>
+        <td>ticket-api.js</td>
+        <td>ดึงค่า Settings (Service, Category, ข้อความต้อนรับ)</td>
+      </tr>
+      <tr>
+        <td><span class="badge m-put">PUT</span></td>
+        <td class="td-code">/settings</td>
+        <td>ticket-api.js</td>
+        <td>บันทึกค่า Settings</td>
+      </tr>
+      <tr>
+        <td><span class="badge m-get">GET</span></td>
+        <td class="td-code">/admin</td>
+        <td>ticket-api.js</td>
+        <td>หน้า Admin UI จัดการ Keyword และ Settings</td>
+      </tr>
+    </table>
+  </div>
+
+  <!-- Code viewer -->
+  <div class="section-label">Source Code</div>
+
+  <div class="file-tabs">
+    <button class="file-tab active" onclick="switchFile('server', this)">server.js</button>
+    <button class="file-tab" onclick="switchFile('ticket', this)">ticket-api.js</button>
+    <button class="file-tab" onclick="switchFile('keywords', this)">keywords.json</button>
+    <button class="file-tab" onclick="switchFile('settings', this)">settings.json</button>
+    <button class="file-tab" onclick="switchFile('env', this)">.env.example</button>
+    <button class="file-tab" onclick="switchFile('package', this)">package.json</button>
+  </div>
+
+  <!-- server.js -->
+  <div id="file-server" class="file-panel active">
+    <div class="code-card">
+      <div class="code-header">
+        <div class="code-header-left">
+          <div class="dot dot-red"></div><div class="dot dot-yellow"></div><div class="dot dot-green"></div>
+          <span class="file-name">server.js</span>
+        </div>
+        <span class="line-count">277 lines — Bot Webhook Server (port 3000)</span>
+      </div>
+      <pre><span class="c-func">require</span>(<span class="c-string">'dotenv'</span>).<span class="c-func">config</span>();
+<span class="c-keyword">const</span> <span class="c-const">express</span> = <span class="c-func">require</span>(<span class="c-string">'express'</span>);
+<span class="c-keyword">const</span> <span class="c-const">crypto</span>  = <span class="c-func">require</span>(<span class="c-string">'crypto'</span>);
+<span class="c-keyword">const</span> <span class="c-const">axios</span>   = <span class="c-func">require</span>(<span class="c-string">'axios'</span>);
+
+<span class="c-keyword">const</span> <span class="c-const">app</span> = <span class="c-func">express</span>();
+
+<span class="c-comment">// ── CONFIG ────────────────────────────────────────────────────</span>
+<span class="c-keyword">const</span> <span class="c-const">LINE_CHANNEL_ACCESS_TOKEN</span> = process.env.<span class="c-prop">LINE_CHANNEL_ACCESS_TOKEN</span>;
+<span class="c-keyword">const</span> <span class="c-const">LINE_CHANNEL_SECRET</span>       = process.env.<span class="c-prop">LINE_CHANNEL_SECRET</span>;
+<span class="c-keyword">const</span> <span class="c-const">TICKET_API_BASE_URL</span>       = process.env.<span class="c-prop">TICKET_API_BASE_URL</span> || <span class="c-string">'http://localhost:4000'</span>;
+<span class="c-keyword">const</span> <span class="c-const">PORT</span>                      = process.env.<span class="c-prop">PORT</span> || <span class="c-number">3000</span>;
+
+<span class="c-comment">// ── MIDDLEWARE ────────────────────────────────────────────────</span>
+app.<span class="c-func">use</span>(express.<span class="c-func">json</span>({ <span class="c-prop">verify</span>: (req, _res, buf) => { req.rawBody = buf; } }));
+
+<span class="c-comment">// ── HELPER: Verify LINE Signature ────────────────────────────</span>
+<span class="c-keyword">function</span> <span class="c-func">verifyLineSignature</span>(req) {
+  <span class="c-keyword">const</span> signature = req.headers[<span class="c-string">'x-line-signature'</span>];
+  <span class="c-keyword">if</span> (!signature) <span class="c-keyword">return false</span>;
+  <span class="c-keyword">const</span> hash = crypto.<span class="c-func">createHmac</span>(<span class="c-string">'SHA256'</span>, LINE_CHANNEL_SECRET)
+    .<span class="c-func">update</span>(req.rawBody).<span class="c-func">digest</span>(<span class="c-string">'base64'</span>);
+  <span class="c-keyword">return</span> hash === signature;
+}
+
+<span class="c-comment">// ── HELPER: ส่ง Push Message ─────────────────────────────────</span>
+<span class="c-keyword">async function</span> <span class="c-func">sendLineMessage</span>(userId, messages) {
+  <span class="c-keyword">await</span> axios.<span class="c-func">post</span>(<span class="c-string">'https://api.line.me/v2/bot/message/push'</span>,
+    { <span class="c-prop">to</span>: userId, messages },
+    { <span class="c-prop">headers</span>: { <span class="c-prop">Authorization</span>: <span class="c-string">`Bearer <span class="c-const">${LINE_CHANNEL_ACCESS_TOKEN}</span>`</span> } }
+  );
+}
+
+<span class="c-comment">// ── HELPER: ดึงชื่อ LINE Display Name ────────────────────────</span>
+<span class="c-keyword">async function</span> <span class="c-func">getLineDisplayName</span>(userId) {
+  <span class="c-keyword">try</span> {
+    <span class="c-keyword">const</span> res = <span class="c-keyword">await</span> axios.<span class="c-func">get</span>(<span class="c-string">`https://api.line.me/v2/bot/profile/<span class="c-const">${userId}</span>`</span>,
+      { <span class="c-prop">headers</span>: { <span class="c-prop">Authorization</span>: <span class="c-string">`Bearer <span class="c-const">${LINE_CHANNEL_ACCESS_TOKEN}</span>`</span> } }
+    );
+    <span class="c-keyword">return</span> res.data.<span class="c-prop">displayName</span>;
+  } <span class="c-keyword">catch</span> { <span class="c-keyword">return</span> <span class="c-string">'ไม่ทราบชื่อ'</span>; }
+}
+
+<span class="c-comment">// ── ROUTE 1: Webhook จาก LINE ────────────────────────────────</span>
+app.<span class="c-func">post</span>(<span class="c-string">'/webhook/line'</span>, <span class="c-keyword">async</span> (req, res) => {
+  <span class="c-keyword">if</span> (!<span class="c-func">verifyLineSignature</span>(req)) <span class="c-keyword">return</span> res.<span class="c-func">status</span>(<span class="c-number">401</span>).<span class="c-func">json</span>({ <span class="c-prop">error</span>: <span class="c-string">'Invalid signature'</span> });
+  res.<span class="c-func">status</span>(<span class="c-number">200</span>).<span class="c-func">end</span>(); <span class="c-comment">// LINE ต้องการ 200 OK เร็วๆ</span>
+
+  <span class="c-keyword">for</span> (<span class="c-keyword">const</span> event <span class="c-keyword">of</span> req.body.events || []) {
+    <span class="c-keyword">if</span> (event.<span class="c-prop">type</span> !== <span class="c-string">'message'</span> || event.message.<span class="c-prop">type</span> !== <span class="c-string">'text'</span>) <span class="c-keyword">continue</span>;
+    <span class="c-keyword">const</span> userId = event.source.<span class="c-prop">userId</span>;
+    <span class="c-keyword">const</span> text   = event.message.<span class="c-prop">text</span>;
+
+    <span class="c-comment">// โหลด Keyword จาก API</span>
+    <span class="c-keyword">let</span> keywords = [];
+    <span class="c-keyword">try</span> { keywords = (<span class="c-keyword">await</span> axios.<span class="c-func">get</span>(<span class="c-string">`<span class="c-const">${TICKET_API_BASE_URL}</span>/keywords`</span>)).data; }
+    <span class="c-keyword">catch</span> {}
+
+    <span class="c-comment">// ตรวจ keyword → เปิด Ticket อัตโนมัติ</span>
+    <span class="c-keyword">const</span> matched = keywords.<span class="c-func">find</span>(kw => text.<span class="c-func">toLowerCase</span>().<span class="c-func">includes</span>(kw.<span class="c-func">toLowerCase</span>()));
+    <span class="c-keyword">if</span> (matched) {
+      <span class="c-keyword">const</span> [displayName, settings] = <span class="c-keyword">await</span> Promise.<span class="c-func">all</span>([
+        <span class="c-func">getLineDisplayName</span>(userId),
+        axios.<span class="c-func">get</span>(<span class="c-string">`<span class="c-const">${TICKET_API_BASE_URL}</span>/settings`</span>).<span class="c-func">then</span>(r => r.data),
+      ]);
+      <span class="c-keyword">const</span> ticket = (<span class="c-keyword">await</span> axios.<span class="c-func">post</span>(<span class="c-string">`<span class="c-const">${TICKET_API_BASE_URL}</span>/tickets`</span>, {
+        <span class="c-prop">title</span>: text, <span class="c-prop">lineUserId</span>: userId, <span class="c-prop">reporterName</span>: displayName,
+        <span class="c-prop">service</span>: settings.service, <span class="c-prop">category</span>: settings.category,
+        <span class="c-prop">subCategory</span>: settings.subCategory,
+      })).data;
+      <span class="c-keyword">await</span> <span class="c-func">sendLineMessage</span>(userId, [{ <span class="c-prop">type</span>: <span class="c-string">'text'</span>, <span class="c-prop">text</span>:
+        <span class="c-string">`📋 Ticket: #<span class="c-const">${ticket.id}</span>\n🔴 ปัญหา: <span class="c-const">${ticket.title}</span>\n👤 ผู้แจ้ง: <span class="c-const">${ticket.reporterName}</span>\n`</span> +
+        <span class="c-string">`🏢 Service: <span class="c-const">${ticket.service}</span>\n📂 Category: <span class="c-const">${ticket.category}</span>\n`</span> +
+        <span class="c-string">`📌 Sub Category: <span class="c-const">${ticket.subCategory}</span>\n⚙️ สถานะ: <span class="c-const">${settings.defaultStatus}</span>\n`</span> +
+        <span class="c-string">`🔧 วิธีการแก้ไข: -\n📅 รับเรื่องวันที่: <span class="c-const">${new Date(ticket.createdAt).toLocaleString('th-TH')}</span>\n`</span> +
+        <span class="c-string">`\nติดตามสถานะได้โดยพิมพ์:\n"ตรวจสอบ #<span class="c-const">${ticket.id}</span>"`</span>
+      }]);
+      <span class="c-keyword">continue</span>;
+    }
+
+    <span class="c-comment">// ตรวจสอบ #ID → แสดงสถานะ Ticket</span>
+    <span class="c-keyword">const</span> trackMatch = text.<span class="c-func">match</span>(<span class="c-string">/ตรวจสอบ\s*#?(\d+)/</span>);
+    <span class="c-keyword">if</span> (trackMatch) {
+      <span class="c-keyword">const</span> ticket = (<span class="c-keyword">await</span> axios.<span class="c-func">get</span>(<span class="c-string">`<span class="c-const">${TICKET_API_BASE_URL}</span>/tickets/<span class="c-const">${trackMatch[1]}</span>`</span>)).data;
+      <span class="c-keyword">const</span> isClosed = ticket.status === <span class="c-string">'closed'</span>;
+      <span class="c-keyword">await</span> <span class="c-func">sendLineMessage</span>(userId, [{ <span class="c-prop">type</span>: <span class="c-string">'text'</span>, <span class="c-prop">text</span>:
+        <span class="c-string">`📋 สถานะ Ticket #<span class="c-const">${ticket.id}</span>\n🔴 ปัญหา: <span class="c-const">${ticket.title}</span>\n`</span> +
+        <span class="c-string">`⚙️ สถานะ: <span class="c-const">${translateStatus(ticket.status)}</span>\n`</span> +
+        <span class="c-string">`🔧 วิธีการแก้ไข: <span class="c-const">${ticket.resolution || '-'}</span>\n`</span> +
+        <span class="c-string">`👨‍💻 ผู้ดำเนินการแก้ไข: <span class="c-const">${ticket.resolvedBy || '-'}</span>\n`</span> +
+        (isClosed ? <span class="c-string">`✅ วันที่แก้ไขเสร็จ: <span class="c-const">${new Date(ticket.resolvedAt).toLocaleString('th-TH')}</span>\n`</span>
+                  : <span class="c-string">`🕐 อัปเดตล่าสุด: <span class="c-const">${new Date(ticket.updatedAt).toLocaleString('th-TH')}</span>\n`</span>)
+      }]);
+      <span class="c-keyword">continue</span>;
+    }
+  }
+});
+
+<span class="c-comment">// ── ROUTE 2: แจ้งเตือนเปิด Ticket ──────────────────────────</span>
+app.<span class="c-func">post</span>(<span class="c-string">'/notify/ticket-opened'</span>, <span class="c-keyword">async</span> (req, res) => {
+  <span class="c-keyword">const</span> { ticketId, title, lineUserId } = req.body;
+  <span class="c-keyword">await</span> <span class="c-func">sendLineMessage</span>(lineUserId, [{ <span class="c-prop">type</span>: <span class="c-string">'text'</span>, <span class="c-prop">text</span>:
+    <span class="c-string">`✅ เปิด Ticket #<span class="c-const">${ticketId}</span> เรียบร้อยแล้วครับ\n📌 หัวข้อ: <span class="c-const">${title}</span>\n`</span> +
+    <span class="c-string">`ติดตามสถานะ: "ตรวจสอบ #<span class="c-const">${ticketId}</span>"`</span>
+  }]);
+  res.<span class="c-func">json</span>({ <span class="c-prop">success</span>: <span class="c-keyword">true</span> });
+});
+
+<span class="c-comment">// ── ROUTE 3: แจ้งเตือนปิด Ticket ──────────────────────────</span>
+app.<span class="c-func">post</span>(<span class="c-string">'/notify/ticket-closed'</span>, <span class="c-keyword">async</span> (req, res) => {
+  <span class="c-keyword">const</span> { ticketId, title, lineUserId } = req.body;
+  <span class="c-keyword">await</span> <span class="c-func">sendLineMessage</span>(lineUserId, [{ <span class="c-prop">type</span>: <span class="c-string">'text'</span>, <span class="c-prop">text</span>:
+    <span class="c-string">`🎉 Ticket #<span class="c-const">${ticketId}</span> ดำเนินการเสร็จสิ้นแล้วครับ\n📌 หัวข้อ: <span class="c-const">${title}</span>\n`</span> +
+    <span class="c-string">`หากยังมีปัญหา สามารถแจ้งกลับมาได้เลยครับ`</span>
+  }]);
+  res.<span class="c-func">json</span>({ <span class="c-prop">success</span>: <span class="c-keyword">true</span> });
+});
+
+<span class="c-comment">// ── HELPER: แปลงสถานะเป็นภาษาไทย ─────────────────────────</span>
+<span class="c-keyword">function</span> <span class="c-func">translateStatus</span>(status) {
+  <span class="c-keyword">return</span> { <span class="c-prop">open</span>: <span class="c-string">'🟡 เปิดแล้ว รอดำเนินการ'</span>, <span class="c-prop">in_progress</span>: <span class="c-string">'🔵 กำลังดำเนินการ'</span>,
+           <span class="c-prop">closed</span>: <span class="c-string">'🟢 ดำเนินการเสร็จสิ้น'</span>, <span class="c-prop">cancelled</span>: <span class="c-string">'🔴 ยกเลิกแล้ว'</span> }[status] || status;
+}
+
+app.<span class="c-func">listen</span>(PORT, () => console.<span class="c-func">log</span>(<span class="c-string">`Webhook server running on port <span class="c-const">${PORT}</span>`</span>));</pre>
+    </div>
+  </div>
+
+  <!-- ticket-api.js -->
+  <div id="file-ticket" class="file-panel">
+    <div class="code-card">
+      <div class="code-header">
+        <div class="code-header-left">
+          <div class="dot dot-red"></div><div class="dot dot-yellow"></div><div class="dot dot-green"></div>
+          <span class="file-name">ticket-api.js</span>
+        </div>
+        <span class="line-count">173 lines — Ticket API + Admin Server (port 4000)</span>
+      </div>
+      <pre><span class="c-func">require</span>(<span class="c-string">'dotenv'</span>).<span class="c-func">config</span>();
+<span class="c-keyword">const</span> express = <span class="c-func">require</span>(<span class="c-string">'express'</span>);
+<span class="c-keyword">const</span> fs      = <span class="c-func">require</span>(<span class="c-string">'fs'</span>);
+<span class="c-keyword">const</span> path    = <span class="c-func">require</span>(<span class="c-string">'path'</span>);
+<span class="c-keyword">const</span> app = <span class="c-func">express</span>();
+app.<span class="c-func">use</span>(express.<span class="c-func">json</span>());
+
+<span class="c-comment">// ── File helpers ──────────────────────────────────────────────</span>
+<span class="c-keyword">const</span> KEYWORDS_FILE = path.<span class="c-func">join</span>(__dirname, <span class="c-string">'keywords.json'</span>);
+<span class="c-keyword">const</span> SETTINGS_FILE = path.<span class="c-func">join</span>(__dirname, <span class="c-string">'settings.json'</span>);
+
+<span class="c-keyword">const</span> loadKeywords  = () => JSON.<span class="c-func">parse</span>(fs.<span class="c-func">readFileSync</span>(KEYWORDS_FILE, <span class="c-string">'utf-8'</span>));
+<span class="c-keyword">const</span> saveKeywords  = kw => fs.<span class="c-func">writeFileSync</span>(KEYWORDS_FILE, JSON.<span class="c-func">stringify</span>(kw, <span class="c-keyword">null</span>, <span class="c-number">2</span>));
+<span class="c-keyword">const</span> loadSettings  = () => JSON.<span class="c-func">parse</span>(fs.<span class="c-func">readFileSync</span>(SETTINGS_FILE, <span class="c-string">'utf-8'</span>));
+<span class="c-keyword">const</span> saveSettings  = s  => fs.<span class="c-func">writeFileSync</span>(SETTINGS_FILE, JSON.<span class="c-func">stringify</span>(s, <span class="c-keyword">null</span>, <span class="c-number">2</span>));
+
+<span class="c-comment">// ── Keywords Routes ───────────────────────────────────────────</span>
+app.<span class="c-func">get</span>(<span class="c-string">'/keywords'</span>, (req, res) => res.<span class="c-func">json</span>(<span class="c-func">loadKeywords</span>()));
+app.<span class="c-func">post</span>(<span class="c-string">'/keywords'</span>, (req, res) => {
+  <span class="c-keyword">const</span> keywords = <span class="c-func">loadKeywords</span>();
+  <span class="c-keyword">const</span> kw = req.body.keyword?.trim();
+  <span class="c-keyword">if</span> (!kw) <span class="c-keyword">return</span> res.<span class="c-func">status</span>(<span class="c-number">400</span>).<span class="c-func">json</span>({ <span class="c-prop">error</span>: <span class="c-string">'keyword is required'</span> });
+  <span class="c-keyword">if</span> (keywords.<span class="c-func">includes</span>(kw)) <span class="c-keyword">return</span> res.<span class="c-func">status</span>(<span class="c-number">400</span>).<span class="c-func">json</span>({ <span class="c-prop">error</span>: <span class="c-string">'Keyword นี้มีอยู่แล้ว'</span> });
+  keywords.<span class="c-func">push</span>(kw); <span class="c-func">saveKeywords</span>(keywords);
+  res.<span class="c-func">status</span>(<span class="c-number">201</span>).<span class="c-func">json</span>({ <span class="c-prop">success</span>: <span class="c-keyword">true</span>, keywords });
+});
+app.<span class="c-func">delete</span>(<span class="c-string">'/keywords/:index'</span>, (req, res) => {
+  <span class="c-keyword">const</span> keywords = <span class="c-func">loadKeywords</span>();
+  keywords.<span class="c-func">splice</span>(parseInt(req.params.index), <span class="c-number">1</span>);
+  <span class="c-func">saveKeywords</span>(keywords);
+  res.<span class="c-func">json</span>({ <span class="c-prop">success</span>: <span class="c-keyword">true</span>, keywords });
+});
+
+<span class="c-comment">// ── Settings Routes ───────────────────────────────────────────</span>
+app.<span class="c-func">get</span>(<span class="c-string">'/settings'</span>, (req, res) => res.<span class="c-func">json</span>(<span class="c-func">loadSettings</span>()));
+app.<span class="c-func">put</span>(<span class="c-string">'/settings'</span>, (req, res) => {
+  <span class="c-keyword">const</span> updated = { ...<span class="c-func">loadSettings</span>(), ...req.body };
+  <span class="c-func">saveSettings</span>(updated);
+  res.<span class="c-func">json</span>(updated);
+});
+
+<span class="c-comment">// ── Admin UI ──────────────────────────────────────────────────</span>
+app.<span class="c-func">get</span>(<span class="c-string">'/admin'</span>, (req, res) => res.<span class="c-func">sendFile</span>(path.<span class="c-func">join</span>(__dirname, <span class="c-string">'admin.html'</span>)));
+
+<span class="c-comment">// ── In-memory Ticket Storage ──────────────────────────────────</span>
+<span class="c-keyword">let</span> tickets = [
+  { <span class="c-prop">id</span>: <span class="c-string">'1'</span>, <span class="c-prop">title</span>: <span class="c-string">'ปัญหาการ Login ไม่ได้'</span>, <span class="c-prop">status</span>: <span class="c-string">'open'</span>, <span class="c-prop">resolution</span>: <span class="c-string">''</span>, <span class="c-prop">resolvedBy</span>: <span class="c-string">''</span>, <span class="c-prop">resolvedAt</span>: <span class="c-keyword">null</span> },
+  { <span class="c-prop">id</span>: <span class="c-string">'2'</span>, <span class="c-prop">title</span>: <span class="c-string">'ระบบช้ามากช่วงเช้า'</span>,    <span class="c-prop">status</span>: <span class="c-string">'in_progress'</span>, <span class="c-prop">resolution</span>: <span class="c-string">''</span>, <span class="c-prop">resolvedBy</span>: <span class="c-string">''</span>, <span class="c-prop">resolvedAt</span>: <span class="c-keyword">null</span> },
+];
+<span class="c-keyword">let</span> nextId = <span class="c-number">3</span>;
+
+<span class="c-comment">// ── Ticket Routes ─────────────────────────────────────────────</span>
+app.<span class="c-func">get</span>(<span class="c-string">'/tickets'</span>, (req, res) => res.<span class="c-func">json</span>(tickets));
+
+app.<span class="c-func">get</span>(<span class="c-string">'/tickets/:id'</span>, (req, res) => {
+  <span class="c-keyword">const</span> t = tickets.<span class="c-func">find</span>(t => t.id === req.params.id);
+  t ? res.<span class="c-func">json</span>(t) : res.<span class="c-func">status</span>(<span class="c-number">404</span>).<span class="c-func">json</span>({ <span class="c-prop">error</span>: <span class="c-string">'Ticket not found'</span> });
+});
+
+app.<span class="c-func">post</span>(<span class="c-string">'/tickets'</span>, (req, res) => {
+  <span class="c-keyword">const</span> { title, lineUserId, reporterName, service, category, subCategory } = req.body;
+  <span class="c-keyword">if</span> (!title || !lineUserId) <span class="c-keyword">return</span> res.<span class="c-func">status</span>(<span class="c-number">400</span>).<span class="c-func">json</span>({ <span class="c-prop">error</span>: <span class="c-string">'title and lineUserId are required'</span> });
+  <span class="c-keyword">const</span> ticket = {
+    <span class="c-prop">id</span>: String(nextId++), title, <span class="c-prop">status</span>: <span class="c-string">'in_progress'</span>,
+    lineUserId, <span class="c-prop">reporterName</span>: reporterName || <span class="c-string">'ไม่ทราบชื่อ'</span>,
+    <span class="c-prop">service</span>: service || <span class="c-string">'EHP CIS'</span>, <span class="c-prop">category</span>: category || <span class="c-string">'ปัญหาการใช้งานทั่วไป'</span>,
+    <span class="c-prop">subCategory</span>: subCategory || <span class="c-string">'การใช้งานทั่วไป'</span>,
+    <span class="c-prop">resolution</span>: <span class="c-string">''</span>, <span class="c-prop">resolvedBy</span>: <span class="c-string">''</span>, <span class="c-prop">resolvedAt</span>: <span class="c-keyword">null</span>,
+    <span class="c-prop">createdAt</span>: <span class="c-keyword">new</span> <span class="c-func">Date</span>().<span class="c-func">toISOString</span>(), <span class="c-prop">updatedAt</span>: <span class="c-keyword">new</span> <span class="c-func">Date</span>().<span class="c-func">toISOString</span>(),
+  };
+  tickets.<span class="c-func">push</span>(ticket);
+  res.<span class="c-func">status</span>(<span class="c-number">201</span>).<span class="c-func">json</span>(ticket);
+});
+
+app.<span class="c-func">patch</span>(<span class="c-string">'/tickets/:id/status'</span>, (req, res) => {
+  <span class="c-keyword">const</span> ticket = tickets.<span class="c-func">find</span>(t => t.id === req.params.id);
+  <span class="c-keyword">if</span> (!ticket) <span class="c-keyword">return</span> res.<span class="c-func">status</span>(<span class="c-number">404</span>).<span class="c-func">json</span>({ <span class="c-prop">error</span>: <span class="c-string">'Ticket not found'</span> });
+  <span class="c-keyword">const</span> { status, resolution, resolvedBy } = req.body;
+  ticket.status    = status;
+  ticket.updatedAt = <span class="c-keyword">new</span> <span class="c-func">Date</span>().<span class="c-func">toISOString</span>();
+  <span class="c-keyword">if</span> (resolution !== undefined) ticket.resolution = resolution;
+  <span class="c-keyword">if</span> (resolvedBy !== undefined) ticket.resolvedBy  = resolvedBy;
+  <span class="c-keyword">if</span> (status === <span class="c-string">'closed'</span>) ticket.resolvedAt = <span class="c-keyword">new</span> <span class="c-func">Date</span>().<span class="c-func">toISOString</span>();
+  res.<span class="c-func">json</span>(ticket);
+});
+
+app.<span class="c-func">delete</span>(<span class="c-string">'/tickets/:id'</span>, (req, res) => {
+  <span class="c-keyword">const</span> i = tickets.<span class="c-func">findIndex</span>(t => t.id === req.params.id);
+  <span class="c-keyword">if</span> (i === -<span class="c-number">1</span>) <span class="c-keyword">return</span> res.<span class="c-func">status</span>(<span class="c-number">404</span>).<span class="c-func">json</span>({ <span class="c-prop">error</span>: <span class="c-string">'Ticket not found'</span> });
+  tickets.<span class="c-func">splice</span>(i, <span class="c-number">1</span>);
+  res.<span class="c-func">json</span>({ <span class="c-prop">success</span>: <span class="c-keyword">true</span> });
+});
+
+<span class="c-keyword">const</span> PORT = process.env.<span class="c-prop">TICKET_API_PORT</span> || <span class="c-number">4000</span>;
+app.<span class="c-func">listen</span>(PORT, () => console.<span class="c-func">log</span>(<span class="c-string">`Ticket API running on port <span class="c-const">${PORT}</span>`</span>));</pre>
+    </div>
+  </div>
+
+  <!-- keywords.json -->
+  <div id="file-keywords" class="file-panel">
+    <div class="code-card">
+      <div class="code-header">
+        <div class="code-header-left">
+          <div class="dot dot-red"></div><div class="dot dot-yellow"></div><div class="dot dot-green"></div>
+          <span class="file-name">keywords.json</span>
+        </div>
+        <span class="line-count">Keyword สำหรับเปิด Ticket อัตโนมัติ — แก้ไขได้ผ่านหน้า Admin UI</span>
+      </div>
+      <pre>[
+  <span class="c-string">"เข้าระบบไม่ได้"</span>,
+  <span class="c-string">"ส่งเคลมไม่ได้"</span>,
+  <span class="c-string">"แจ้งปัญหา"</span>,
+  <span class="c-string">"ระบบล่ม"</span>,
+  <span class="c-string">"ระบบช้า"</span>,
+  <span class="c-string">"ใช้งานไม่ได้"</span>,
+  <span class="c-string">"เกิดข้อผิดพลาด"</span>,
+  <span class="c-string">"error"</span>,
+  <span class="c-string">"แก้ไขราคาไม่ได้"</span>,
+  <span class="c-string">"แก้ไขรายการไม่ได้"</span>
+]</pre>
+    </div>
+  </div>
+
+  <!-- settings.json -->
+  <div id="file-settings" class="file-panel">
+    <div class="code-card">
+      <div class="code-header">
+        <div class="code-header-left">
+          <div class="dot dot-red"></div><div class="dot dot-yellow"></div><div class="dot dot-green"></div>
+          <span class="file-name">settings.json</span>
+        </div>
+        <span class="line-count">ค่า Default สำหรับข้อความตอบกลับ — แก้ไขได้ผ่านหน้า Admin UI</span>
+      </div>
+      <pre>{
+  <span class="c-prop">"service"</span>:        <span class="c-string">"EHP CIS"</span>,
+  <span class="c-prop">"category"</span>:       <span class="c-string">"ปัญหาการใช้งานทั่วไป"</span>,
+  <span class="c-prop">"subCategory"</span>:    <span class="c-string">"การใช้งานทั่วไป"</span>,
+  <span class="c-prop">"defaultStatus"</span>:  <span class="c-string">"กำลังดำเนินการ"</span>,
+  <span class="c-prop">"welcomeMessage"</span>: <span class="c-string">"รับเรื่องแล้วครับ คุณ"</span>
+}</pre>
+    </div>
+  </div>
+
+  <!-- .env.example -->
+  <div id="file-env" class="file-panel">
+    <div class="code-card">
+      <div class="code-header">
+        <div class="code-header-left">
+          <div class="dot dot-red"></div><div class="dot dot-yellow"></div><div class="dot dot-green"></div>
+          <span class="file-name">.env.example</span>
+        </div>
+        <span class="line-count">Template ค่า Config — Copy เป็น .env แล้วใส่ค่าจริง</span>
+      </div>
+      <pre><span class="c-comment"># LINE Messaging API</span>
+<span class="c-const">LINE_CHANNEL_ACCESS_TOKEN</span>=<span class="c-string">ใส่ token ที่ได้จาก LINE Developer Console</span>
+<span class="c-const">LINE_CHANNEL_SECRET</span>=<span class="c-string">ใส่ channel secret จาก LINE Developer Console</span>
+
+<span class="c-comment"># Ticket System API</span>
+<span class="c-const">TICKET_API_BASE_URL</span>=<span class="c-string">http://localhost:4000</span>
+
+<span class="c-comment"># Server Port</span>
+<span class="c-const">PORT</span>=<span class="c-number">3000</span>
+<span class="c-const">TICKET_API_PORT</span>=<span class="c-number">4000</span></pre>
+    </div>
+  </div>
+
+  <!-- package.json -->
+  <div id="file-package" class="file-panel">
+    <div class="code-card">
+      <div class="code-header">
+        <div class="code-header-left">
+          <div class="dot dot-red"></div><div class="dot dot-yellow"></div><div class="dot dot-green"></div>
+          <span class="file-name">package.json</span>
+        </div>
+        <span class="line-count">Dependencies และ Scripts</span>
+      </div>
+      <pre>{
+  <span class="c-prop">"name"</span>: <span class="c-string">"line-ticket-webhook"</span>,
+  <span class="c-prop">"version"</span>: <span class="c-string">"1.0.0"</span>,
+  <span class="c-prop">"scripts"</span>: {
+    <span class="c-prop">"start"</span>:          <span class="c-string">"node server.js"</span>,
+    <span class="c-prop">"dev"</span>:            <span class="c-string">"nodemon server.js"</span>,
+    <span class="c-prop">"ticket-api"</span>:     <span class="c-string">"node ticket-api.js"</span>,
+    <span class="c-prop">"ticket-api:dev"</span>: <span class="c-string">"nodemon ticket-api.js"</span>
+  },
+  <span class="c-prop">"dependencies"</span>: {
+    <span class="c-prop">"axios"</span>:  <span class="c-string">"^1.6.0"</span>,
+    <span class="c-prop">"dotenv"</span>: <span class="c-string">"^17.4.2"</span>,
+    <span class="c-prop">"express"</span>: <span class="c-string">"^4.18.0"</span>
+  },
+  <span class="c-prop">"devDependencies"</span>: {
+    <span class="c-prop">"nodemon"</span>: <span class="c-string">"^3.0.0"</span>
+  }
+}</pre>
+    </div>
+  </div>
+
+</div>
+
+<footer>
+  EHP LINE Chatbot — Code Summary v1.0 | 11 พฤษภาคม 2569
+</footer>
+
+<script>
+  function switchFile(name, btn) {
+    document.querySelectorAll('.file-panel').forEach(p => p.classList.remove('active'));
+    document.querySelectorAll('.file-tab').forEach(b => b.classList.remove('active'));
+    document.getElementById('file-' + name).classList.add('active');
+    btn.classList.add('active');
+  }
+</script>
+</body>
+</html>
