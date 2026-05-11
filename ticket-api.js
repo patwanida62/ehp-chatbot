@@ -72,6 +72,11 @@ app.get('/admin', (req, res) => {
   res.sendFile(path.join(__dirname, 'admin.html'));
 });
 
+// GET /dashboard — หน้า Ticket Dashboard
+app.get('/dashboard', (req, res) => {
+  res.sendFile(path.join(__dirname, 'dashboard.html'));
+});
+
 const PORT = process.env.TICKET_API_PORT || 4000;
 
 // In-memory storage
