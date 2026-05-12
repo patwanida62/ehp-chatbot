@@ -153,16 +153,22 @@ app.post('/webhook/line', async (req, res) => {
           getLineDisplayName(userId),
           axios.get(`${TICKET_API_BASE_URL}/settings`).then((r) => r.data),
         ]);
-        const title = text.trim();
-        const res2 = await axios.post(`${TICKET_API_BASE_URL}/tickets`, {
-          title,
+        // 1. สร้าง Ticket → ได้ id กลับมา
+        const createRes = await axios.post(`${TICKET_API_BASE_URL}/tickets`, {
+          title: text.trim(),
           lineUserId: userId,
           reporterName: displayName,
           service: settings.service,
           category: settings.category,
           subCategory: settings.subCategory,
         });
-        const ticket = res2.data;
+        const ticketId = createRes.data.id;
+
+        // 2. ดึงข้อมูลเต็มจาก Ticket System ด้วย ID ที่ได้มา
+        const ticketRes = await axios.get(`${TICKET_API_BASE_URL}/tickets/${ticketId}`);
+        const ticket = ticketRes.data;
+
+        // 3. ตอบลูกค้าด้วยข้อมูลจาก GET /tickets/:id
         const createdDate = new Date(ticket.createdAt).toLocaleString('th-TH');
         const template = settings.msgTicketOpened || DEFAULT_MSG_TICKET_OPENED;
         const msgText = buildMessage(template, {
