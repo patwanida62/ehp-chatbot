@@ -50,6 +50,19 @@ function buildMessage(template, vars) {
 }
 
 // ============================================================
+// HELPER — จับคู่ข้อความกับ Keyword แบบใกล้เคียง
+// ตรวจสอบ 2 ทิศทาง:
+//   1. ข้อความมี keyword อยู่      เช่น "ส่งเคลมไม่ได้วันนี้" กับ keyword "ส่งเคลม"
+//   2. keyword มีข้อความอยู่       เช่น "ส่งเคลม" กับ keyword "ส่งเคลมไม่ได้"
+// เงื่อนไข: ข้อความต้องยาวอย่างน้อย 4 ตัวอักษรสำหรับการจับคู่แบบที่ 2
+// ============================================================
+function matchesKeyword(text, kw) {
+  const t = text.toLowerCase().trim();
+  const k = kw.toLowerCase();
+  return t.includes(k) || (t.length >= 4 && k.includes(t));
+}
+
+// ============================================================
 // HELPER — Verify Line Signature
 // ============================================================
 function verifyLineSignature(req) {
@@ -132,9 +145,7 @@ app.post('/webhook/line', async (req, res) => {
       AUTO_TICKET_KEYWORDS = [];
     }
 
-    const matchedKeyword = AUTO_TICKET_KEYWORDS.find((kw) =>
-      text.toLowerCase().includes(kw.toLowerCase())
-    );
+    const matchedKeyword = AUTO_TICKET_KEYWORDS.find((kw) => matchesKeyword(text, kw));
 
     if (matchedKeyword) {
       try {
