@@ -263,27 +263,50 @@ app.post('/notify/ticket-opened', async (req, res) => {
 });
 
 // ============================================================
-// ROUTE 3 — ปิด Ticket (เรียกจากระบบ Ticket ของคุณ)
-// Body: { ticketId, title, lineUserId }
+// ROUTE 3 — ปิด/อัปเดตสถานะ Ticket (เรียกจากระบบ Ticket)
+// Body: {
+//   ticketId      — รหัส Ticket (required)
+//   title         — หัวข้อปัญหา (required)
+//   lineUserId    — LINE User ID ลูกค้า (required)
+//   status        — สถานะใหม่ เช่น "เสร็จสิ้น"
+//   resolvedBy    — ผู้แก้ปัญหา
+//   resolution    — วิธีแก้ไข
+//   cause         — สาเหตุ
+//   resolvedDate  — วันที่เสร็จสิ้น เช่น "2026-05-12"
+//   resolvedTime  — เวลาเสร็จสิ้น เช่น "10:58"
+//   remark        — หมายเหตุ
+// }
 // ============================================================
 app.post('/notify/ticket-closed', async (req, res) => {
-  const { ticketId, title, lineUserId } = req.body;
+  const {
+    ticketId, title, lineUserId,
+    status, resolvedBy, resolution, cause,
+    resolvedDate, resolvedTime, remark,
+  } = req.body;
 
   if (!ticketId || !title || !lineUserId) {
     return res.status(400).json({ error: 'ticketId, title, lineUserId are required' });
   }
 
-  try {
-    await sendLineMessage(lineUserId, [
-      {
-        type: 'text',
-        text:
-          `🎉 Ticket #${ticketId} ดำเนินการเสร็จสิ้นแล้วครับ\n\n` +
-          `📌 หัวข้อ: ${title}\n\n` +
-          `หากยังมีปัญหาหรือข้อสงสัย สามารถแจ้งกลับมาได้เลยนะครับ 😊`,
-      },
-    ]);
+  const resolvedAt = (resolvedDate && resolvedTime)
+    ? `${resolvedDate} ${resolvedTime}`
+    : resolvedDate || '-';
 
+  const lines = [
+    `📋 สถานะ Ticket ${ticketId}`,
+    `🔴 ปัญหา: ${title}`,
+    `⚙️ สถานะ: 🟢 ${status || 'ดำเนินการเสร็จสิ้น'}`,
+    `🔧 วิธีการแก้ไข: ${resolution || '-'}`,
+    `👨‍💻 ผู้ดำเนินการแก้ไข: ${resolvedBy || '-'}`,
+    cause   ? `📌 สาเหตุ: ${cause}`       : null,
+    remark  ? `📝 หมายเหตุ: ${remark}`    : null,
+    `วันที่เวลาในการแก้ไข: ${resolvedAt}`,
+    ``,
+    `หากยังมีปัญหาหรือข้อสงสัย สามารถแจ้งกลับมาได้เลยนะครับ 😊`,
+  ].filter(l => l !== null).join('\n');
+
+  try {
+    await sendLineMessage(lineUserId, [{ type: 'text', text: lines }]);
     console.log(`[NOTIFY] Closed ticket #${ticketId} → userId=${lineUserId}`);
     res.json({ success: true });
   } catch (err) {
