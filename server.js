@@ -77,12 +77,28 @@ function verifyLineSignature(req) {
 }
 
 // ============================================================
-// HELPER — ส่ง Push Message หาลูกค้าผ่าน Line
+// HELPER — Reply Message (ตอบกลับในห้องเดิม — ใช้ได้ทั้ง Group และ 1-on-1)
 // ============================================================
-async function sendLineMessage(userId, messages) {
+async function replyLineMessage(replyToken, messages) {
+  await axios.post(
+    'https://api.line.me/v2/bot/message/reply',
+    { replyToken, messages },
+    {
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${LINE_CHANNEL_ACCESS_TOKEN}`,
+      },
+    }
+  );
+}
+
+// ============================================================
+// HELPER — Push Message (ส่งหา userId หรือ groupId โดยตรง)
+// ============================================================
+async function sendLineMessage(to, messages) {
   await axios.post(
     'https://api.line.me/v2/bot/message/push',
-    { to: userId, messages },
+    { to, messages },
     {
       headers: {
         'Content-Type': 'application/json',
@@ -132,10 +148,13 @@ app.post('/webhook/line', async (req, res) => {
   for (const event of events) {
     if (event.type !== 'message' || event.message.type !== 'text') continue;
 
-    const userId  = event.source.userId;
-    const text    = event.message.text;
+    const sourceType = event.source.type;           // "user" | "group" | "room"
+    const userId     = event.source.userId;
+    const groupId    = event.source.groupId || null; // มีเฉพาะใน Group
+    const replyToken = event.replyToken;
+    const text       = event.message.text;
 
-    console.log(`[LINE] userId=${userId} | message="${text}"`);
+    console.log(`[LINE] source=${sourceType} | userId=${userId}${groupId ? ` | groupId=${groupId}` : ''} | message="${text}"`);
 
     // keyword ที่ทำให้เปิด Ticket อัตโนมัติ — โหลดจาก API ทุกครั้ง
     let AUTO_TICKET_KEYWORDS = [];
@@ -162,6 +181,7 @@ app.post('/webhook/line', async (req, res) => {
           title:        text.trim(),
           detail:       text.trim(),
           lineUserId:   userId,
+          lineGroupId:  groupId,   // เก็บ groupId ด้วยเพื่อใช้ส่ง notify กลับกลุ่ม
           reporterName: displayName,
           service:      settings.service,
           category:     settings.category,
@@ -187,10 +207,10 @@ app.post('/webhook/line', async (req, res) => {
           updatedAt:  new Date(ticket.updatedAt).toLocaleString('th-TH'),
           resolvedAt: ticket.resolvedAt ? new Date(ticket.resolvedAt).toLocaleString('th-TH') : '',
         });
-        await sendLineMessage(userId, [{ type: 'text', text: msgText }]);
-        console.log(`[TICKET] Auto-created #${ticket.id} for "${displayName}" keyword="${matchedKeyword}"`);
+        await replyLineMessage(replyToken, [{ type: 'text', text: msgText }]);
+        console.log(`[TICKET] Auto-created #${ticket.id} for "${displayName}" source=${sourceType} keyword="${matchedKeyword}"`);
       } catch {
-        await sendLineMessage(userId, [
+        await replyLineMessage(replyToken, [
           { type: 'text', text: 'ขออภัยครับ ไม่สามารถเปิด Ticket ได้ในขณะนี้ กรุณาลองใหม่อีกครั้ง' },
         ]);
       }
@@ -216,9 +236,9 @@ app.post('/webhook/line', async (req, res) => {
           updatedAt:  new Date(ticket.updatedAt).toLocaleString('th-TH'),
           resolvedAt: ticket.resolvedAt ? new Date(ticket.resolvedAt).toLocaleString('th-TH') : '',
         });
-        await sendLineMessage(userId, [{ type: 'text', text: msgText2 }]);
+        await replyLineMessage(replyToken, [{ type: 'text', text: msgText2 }]);
       } catch {
-        await sendLineMessage(userId, [
+        await replyLineMessage(replyToken, [
           { type: 'text', text: `ไม่พบ Ticket #${ticketId} กรุณาตรวจสอบเลขอีกครั้งครับ` },
         ]);
       }
@@ -232,17 +252,20 @@ app.post('/webhook/line', async (req, res) => {
 
 // ============================================================
 // ROUTE 2 — เปิด Ticket ใหม่ (เรียกจากระบบ Ticket ของคุณ)
-// Body: { ticketId, title, lineUserId }
+// Body: { ticketId, title, lineUserId, lineGroupId? }
 // ============================================================
 app.post('/notify/ticket-opened', async (req, res) => {
-  const { ticketId, title, lineUserId } = req.body;
+  const { ticketId, title, lineUserId, lineGroupId } = req.body;
 
   if (!ticketId || !title || !lineUserId) {
     return res.status(400).json({ error: 'ticketId, title, lineUserId are required' });
   }
 
+  // ส่งไปที่กลุ่มถ้ามี groupId ไม่งั้นส่งหา userId โดยตรง
+  const sendTo = lineGroupId || lineUserId;
+
   try {
-    await sendLineMessage(lineUserId, [
+    await sendLineMessage(sendTo, [
       {
         type: 'text',
         text:
@@ -254,7 +277,7 @@ app.post('/notify/ticket-opened', async (req, res) => {
       },
     ]);
 
-    console.log(`[NOTIFY] Opened ticket #${ticketId} → userId=${lineUserId}`);
+    console.log(`[NOTIFY] Opened ticket #${ticketId} → ${lineGroupId ? `groupId=${lineGroupId}` : `userId=${lineUserId}`}`);
     res.json({ success: true });
   } catch (err) {
     console.error('[NOTIFY] Failed to send Line message:', err.message);
@@ -268,6 +291,7 @@ app.post('/notify/ticket-opened', async (req, res) => {
 //   ticketId      — รหัส Ticket (required)
 //   title         — หัวข้อปัญหา (required)
 //   lineUserId    — LINE User ID ลูกค้า (required)
+//   lineGroupId   — LINE Group ID (optional — ส่งแจ้งกลุ่มถ้ามี)
 //   status        — สถานะใหม่ เช่น "เสร็จสิ้น"
 //   resolvedBy    — ผู้แก้ปัญหา
 //   resolution    — วิธีแก้ไข
@@ -279,7 +303,7 @@ app.post('/notify/ticket-opened', async (req, res) => {
 // ============================================================
 app.post('/notify/ticket-closed', async (req, res) => {
   const {
-    ticketId, title, lineUserId,
+    ticketId, title, lineUserId, lineGroupId,
     status, resolvedBy, resolution, cause,
     resolvedDate, resolvedTime, remark,
   } = req.body;
@@ -287,6 +311,9 @@ app.post('/notify/ticket-closed', async (req, res) => {
   if (!ticketId || !title || !lineUserId) {
     return res.status(400).json({ error: 'ticketId, title, lineUserId are required' });
   }
+
+  // ส่งไปที่กลุ่มถ้ามี groupId ไม่งั้นส่งหา userId โดยตรง
+  const sendTo = lineGroupId || lineUserId;
 
   const resolvedAt = (resolvedDate && resolvedTime)
     ? `${resolvedDate} ${resolvedTime}`
@@ -306,8 +333,8 @@ app.post('/notify/ticket-closed', async (req, res) => {
   ].filter(l => l !== null).join('\n');
 
   try {
-    await sendLineMessage(lineUserId, [{ type: 'text', text: lines }]);
-    console.log(`[NOTIFY] Closed ticket #${ticketId} → userId=${lineUserId}`);
+    await sendLineMessage(sendTo, [{ type: 'text', text: lines }]);
+    console.log(`[NOTIFY] Closed ticket #${ticketId} → ${lineGroupId ? `groupId=${lineGroupId}` : `userId=${lineUserId}`}`);
     res.json({ success: true });
   } catch (err) {
     console.error('[NOTIFY] Failed to send Line message:', err.message);
