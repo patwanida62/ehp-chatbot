@@ -3,132 +3,113 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>API Document — EHP LINE Chatbot Integration</title>
+  <title>API Document — EHP LINE Chatbot</title>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
-    body { font-family: 'Segoe UI', sans-serif; background: #f5f7fa; color: #333; line-height: 1.6; }
-
-    header {
-      background: linear-gradient(135deg, #06c755, #05a847);
-      color: white; padding: 40px 48px;
+    :root {
+      --green: #06c755; --green2: #05a847;
+      --blue: #3b82f6; --orange: #f59e0b;
+      --red: #ef4444; --purple: #8b5cf6;
+      --bg: #f1f5f9; --card: #fff;
+      --border: #e5e7eb; --text: #111827; --sub: #6b7280;
     }
-    header h1 { font-size: 26px; font-weight: 700; margin-bottom: 6px; }
-    header p { font-size: 14px; opacity: 0.85; }
-    .meta { display: flex; gap: 24px; margin-top: 16px; }
-    .meta span {
-      background: rgba(255,255,255,0.2); padding: 4px 12px;
-      border-radius: 99px; font-size: 12px; font-weight: 600;
-    }
+    body { font-family: 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); line-height: 1.6; }
 
-    .container { max-width: 900px; margin: 0 auto; padding: 40px 24px; }
+    header { background: linear-gradient(135deg, #06c755, #05a847); color: #fff; padding: 40px 48px; }
+    header h1 { font-size: 26px; font-weight: 800; margin-bottom: 6px; }
+    header p  { font-size: 14px; opacity: 0.85; }
+    .meta { display: flex; gap: 10px; margin-top: 16px; flex-wrap: wrap; }
+    .meta span { background: rgba(255,255,255,0.2); padding: 4px 14px; border-radius: 99px; font-size: 12px; font-weight: 600; }
 
-    .toc {
-      background: white; border-radius: 12px; padding: 24px;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.06); margin-bottom: 32px;
-    }
-    .toc h2 { font-size: 14px; font-weight: 700; color: #888; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 12px; }
-    .toc a { display: block; color: #06c755; text-decoration: none; font-size: 14px; padding: 4px 0; }
+    .container { max-width: 960px; margin: 0 auto; padding: 40px 24px 80px; }
+
+    /* TOC */
+    .toc { background: var(--card); border-radius: 14px; padding: 24px 28px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); margin-bottom: 40px; }
+    .toc h2 { font-size: 12px; font-weight: 700; color: var(--sub); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 14px; }
+    .toc-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 4px 24px; }
+    .toc a { color: var(--green); text-decoration: none; font-size: 13px; padding: 3px 0; display: flex; align-items: center; gap: 8px; }
     .toc a:hover { text-decoration: underline; }
 
-    .section { margin-bottom: 40px; }
+    /* Section */
+    .section { margin-bottom: 48px; }
     .section-title {
-      font-size: 13px; font-weight: 700; color: #888;
-      text-transform: uppercase; letter-spacing: 1px; margin-bottom: 16px;
+      font-size: 18px; font-weight: 800; margin-bottom: 20px;
+      padding-bottom: 10px; border-bottom: 2px solid var(--border);
+      display: flex; align-items: center; gap: 10px;
     }
+    .section-sub { font-size: 13px; color: var(--sub); font-weight: 400; margin-left: auto; }
 
-    .endpoint-card {
-      background: white; border-radius: 12px;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.06);
-      overflow: hidden; margin-bottom: 20px;
-    }
-    .endpoint-header {
-      display: flex; align-items: center; gap: 12px;
-      padding: 16px 20px; border-bottom: 1px solid #f0f0f0;
-    }
-    .method {
-      padding: 4px 12px; border-radius: 6px;
-      font-size: 13px; font-weight: 700; font-family: monospace;
-    }
-    .method.post { background: #e8f8ee; color: #06c755; }
-    .method.get  { background: #e3f2fd; color: #1976d2; }
-    .method.patch { background: #fff8e1; color: #f57c00; }
+    /* API Card */
+    .api-card { background: var(--card); border-radius: 14px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); margin-bottom: 24px; overflow: hidden; border: 1px solid var(--border); }
+    .api-header { padding: 16px 20px; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+    .method { padding: 4px 12px; border-radius: 6px; font-size: 12px; font-weight: 800; letter-spacing: 0.5px; flex-shrink: 0; }
+    .method.POST   { background: #dcfce7; color: #15803d; }
+    .method.GET    { background: #dbeafe; color: #1d4ed8; }
+    .method.PATCH  { background: #fef9c3; color: #92400e; }
+    .method.DELETE { background: #fee2e2; color: #b91c1c; }
+    .method.PUT    { background: #ede9fe; color: #6d28d9; }
+    .endpoint { font-family: 'Consolas', monospace; font-size: 14px; font-weight: 700; color: var(--text); }
+    .api-desc { font-size: 13px; color: var(--sub); margin-left: auto; }
+    .req-badge { font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: 99px; }
+    .req-badge.required { background: #fee2e2; color: #b91c1c; }
+    .req-badge.optional { background: #f3f4f6; color: var(--sub); }
 
-    .endpoint-path {
-      font-family: monospace; font-size: 15px;
-      font-weight: 600; color: #111;
-    }
-    .endpoint-desc { color: #777; font-size: 13px; margin-left: auto; }
-    .endpoint-body { padding: 20px; }
+    .api-body { padding: 20px; }
+    .api-body h4 { font-size: 11px; font-weight: 700; color: var(--sub); text-transform: uppercase; letter-spacing: 0.5px; margin: 16px 0 8px; }
+    .api-body h4:first-child { margin-top: 0; }
 
-    .field-table { width: 100%; border-collapse: collapse; font-size: 13px; margin-bottom: 16px; }
-    .field-table th {
-      text-align: left; padding: 8px 12px;
-      background: #f8f9fa; color: #666; font-weight: 600;
-      border-bottom: 2px solid #eee;
-    }
-    .field-table td { padding: 8px 12px; border-bottom: 1px solid #f0f0f0; }
+    pre { background: #1e1e2e; color: #cdd6f4; border-radius: 10px; padding: 16px 20px; font-size: 12.5px; font-family: 'Consolas', monospace; overflow-x: auto; line-height: 1.6; position: relative; }
+    .copy-btn { position: absolute; top: 10px; right: 10px; background: rgba(255,255,255,0.1); border: none; color: #94a3b8; padding: 3px 10px; border-radius: 6px; font-size: 11px; cursor: pointer; transition: all 0.2s; }
+    .copy-btn:hover { background: rgba(255,255,255,0.2); color: #fff; }
+    .copy-btn.copied { background: var(--green); color: #fff; }
+
+    .c  { color: #6c7086; }   /* comment */
+    .k  { color: #cba6f7; }   /* key */
+    .s  { color: #a6e3a1; }   /* string */
+    .n  { color: #fab387; }   /* number/bool */
+    .p  { color: #89b4fa; }   /* punctuation */
+
+    /* Field Table */
+    .field-table { width: 100%; border-collapse: collapse; font-size: 13px; margin-top: 8px; }
+    .field-table th { background: #f8fafc; text-align: left; padding: 8px 12px; font-size: 11px; font-weight: 700; color: var(--sub); text-transform: uppercase; border-bottom: 1px solid var(--border); }
+    .field-table td { padding: 8px 12px; border-bottom: 1px solid var(--border); }
     .field-table tr:last-child td { border-bottom: none; }
-    .field-name { font-family: monospace; color: #d63031; font-weight: 600; }
-    .field-type { font-family: monospace; color: #0984e3; font-size: 12px; }
-    .required {
-      background: #ffeaea; color: #e53935;
-      font-size: 10px; padding: 2px 6px;
-      border-radius: 4px; font-weight: 700;
-    }
-    .optional {
-      background: #f0f0f0; color: #999;
-      font-size: 10px; padding: 2px 6px;
-      border-radius: 4px; font-weight: 700;
-    }
+    .field-table code { background: #f3f4f6; padding: 1px 6px; border-radius: 4px; font-family: 'Consolas', monospace; font-size: 12px; }
 
-    .sub-title {
-      font-size: 12px; font-weight: 700; color: #aaa;
-      text-transform: uppercase; margin-bottom: 8px; margin-top: 16px;
-    }
+    /* Info/Warn box */
+    .info { background: #e8f8ee; border-left: 4px solid var(--green); border-radius: 0 8px 8px 0; padding: 12px 16px; font-size: 13px; color: #1a5c30; margin: 12px 0; }
+    .warn { background: #fff8e1; border-left: 4px solid var(--orange); border-radius: 0 8px 8px 0; padding: 12px 16px; font-size: 13px; color: #78350f; margin: 12px 0; }
 
-    pre {
-      background: #1e1e2e; color: #cdd6f4;
-      border-radius: 8px; padding: 16px 20px;
-      font-size: 13px; overflow-x: auto; line-height: 1.7;
-    }
-    .key { color: #89b4fa; }
-    .str { color: #a6e3a1; }
-    .num { color: #fab387; }
+    /* Flow diagram */
+    .flow { display: flex; align-items: center; gap: 0; flex-wrap: wrap; margin: 16px 0; }
+    .flow-step { background: #f8fafc; border: 1px solid var(--border); border-radius: 8px; padding: 8px 16px; font-size: 12px; font-weight: 600; text-align: center; }
+    .flow-arrow { color: var(--sub); font-size: 18px; padding: 0 6px; }
+    .flow-step.green { background: #e8f8ee; border-color: var(--green); color: #15803d; }
+    .flow-step.blue  { background: #dbeafe; border-color: var(--blue);  color: #1d4ed8; }
+    .flow-step.orange{ background: #fef9c3; border-color: var(--orange);color: #92400e; }
 
-    .badge-get    { background: #e3f2fd; color: #1976d2; }
-    .badge-post   { background: #e8f8ee; color: #06c755; }
-    .badge-patch  { background: #fff8e1; color: #f57c00; }
+    /* Status badge */
+    .badge { display: inline-block; padding: 2px 8px; border-radius: 99px; font-size: 11px; font-weight: 700; }
+    .badge.green  { background: #dcfce7; color: #15803d; }
+    .badge.blue   { background: #dbeafe; color: #1d4ed8; }
+    .badge.orange { background: #fef9c3; color: #92400e; }
+    .badge.red    { background: #fee2e2; color: #b91c1c; }
 
-    .status-table { width: 100%; border-collapse: collapse; font-size: 13px; }
-    .status-table td { padding: 8px 12px; border-bottom: 1px solid #f0f0f0; }
-    .status-dot {
-      display: inline-block; width: 10px; height: 10px;
-      border-radius: 50%; margin-right: 8px;
-    }
+    /* Server badge */
+    .server-tag { display: inline-flex; align-items: center; gap: 5px; background: #1e293b; color: #94a3b8; padding: 3px 10px; border-radius: 6px; font-size: 11px; font-family: monospace; margin-left: 8px; }
 
-    .note {
-      background: #fffbea; border-left: 4px solid #f59e0b;
-      padding: 12px 16px; border-radius: 0 8px 8px 0;
-      font-size: 13px; margin-top: 12px; color: #78350f;
-    }
-
-    footer {
-      text-align: center; padding: 32px;
-      font-size: 13px; color: #aaa; border-top: 1px solid #eee;
-      margin-top: 40px;
-    }
+    footer { text-align: center; color: var(--sub); font-size: 12px; padding: 32px 0; border-top: 1px solid var(--border); margin-top: 40px; }
   </style>
 </head>
 <body>
 
 <header>
-  <h1>EHP LINE Chatbot — API Integration Document</h1>
-  <p>เอกสารสำหรับทีม Developer ในการเชื่อมต่อระบบ Ticket กับ LINE Bot</p>
+  <h1>📡 API Document — EHP LINE Chatbot</h1>
+  <p>เอกสาร API สำหรับการเชื่อมต่อระหว่าง LINE Bot ↔ Ticket System</p>
   <div class="meta">
-    <span>Version 1.0</span>
-    <span>Base URL: /api</span>
-    <span>Format: JSON</span>
-    <span>Date: 11 May 2026</span>
+    <span>🤖 Bot Server: port 3000</span>
+    <span>🎫 Ticket API: port 4000</span>
+    <span>📅 อัปเดต: พฤษภาคม 2569</span>
   </div>
 </header>
 
@@ -137,285 +118,355 @@
   <!-- TOC -->
   <div class="toc">
     <h2>สารบัญ</h2>
-    <a href="#overview">1. ภาพรวมการทำงาน</a>
-    <a href="#auth">2. Authentication</a>
-    <a href="#create-ticket">3. POST /api/tickets — สร้าง Ticket ใหม่</a>
-    <a href="#get-ticket">4. GET /api/tickets/:id — ดึงข้อมูล Ticket</a>
-    <a href="#update-status">5. PATCH /api/tickets/:id/status — อัปเดตสถานะ</a>
-    <a href="#status-codes">6. Status Codes</a>
-    <a href="#error-format">7. Error Response Format</a>
+    <div class="toc-grid">
+      <div>
+        <div style="font-size:11px;font-weight:700;color:var(--sub);margin-bottom:6px">🤖 BOT SERVER (port 3000)</div>
+        <a href="#s1">① POST /webhook/line</a>
+        <a href="#s2">② POST /notify/ticket-closed</a>
+        <a href="#s3">③ POST /notify/ticket-opened</a>
+      </div>
+      <div>
+        <div style="font-size:11px;font-weight:700;color:var(--sub);margin-bottom:6px">🎫 TICKET API (port 4000)</div>
+        <a href="#s4">④ POST /tickets — สร้าง Ticket</a>
+        <a href="#s5">⑤ GET /tickets/:id — ดึงข้อมูล</a>
+        <a href="#s6">⑥ PATCH /tickets/:id/status — อัปเดต</a>
+        <a href="#s7">⑦ GET/POST /keywords</a>
+        <a href="#s8">⑧ GET/PUT /settings</a>
+      </div>
+    </div>
   </div>
 
-  <!-- Overview -->
-  <div class="section" id="overview">
-    <div class="section-title">1. ภาพรวมการทำงาน</div>
-    <div class="endpoint-card">
-      <div class="endpoint-body">
-        <p style="font-size:14px;margin-bottom:16px;">LINE Bot จะเรียก API ของระบบ Ticket ใน 3 กรณี:</p>
-        <table class="field-table">
-          <tr>
-            <th>กรณี</th><th>Endpoint ที่เรียก</th><th>เมื่อไหร่</th>
-          </tr>
-          <tr>
-            <td>ลูกค้าพิมข้อความที่ตรง keyword</td>
-            <td><span class="field-name">POST /api/tickets</span></td>
-            <td>เปิด Ticket อัตโนมัติทันที</td>
-          </tr>
-          <tr>
-            <td>ลูกค้าพิม "ตรวจสอบ #001"</td>
-            <td><span class="field-name">GET /api/tickets/001</span></td>
-            <td>ดึงสถานะล่าสุดตอบกลับ</td>
-          </tr>
-          <tr>
-            <td>เจ้าหน้าที่ปิด Ticket</td>
-            <td><span class="field-name">POST /notify/ticket-closed</span></td>
-            <td>ระบบ Ticket เรียก Bot เพื่อแจ้งลูกค้า</td>
-          </tr>
-        </table>
-        <div class="note">
-          ⚠️ Bot จะเรียก <strong>TICKET_API_BASE_URL</strong> ที่กำหนดใน .env เช่น <code>https://your-system.com/api</code>
+  <!-- ==================== BOT SERVER ==================== -->
+  <div class="section">
+    <div class="section-title">
+      🤖 Bot Server
+      <span class="server-tag">localhost:3000</span>
+      <span class="section-sub">Webhook + Notification endpoints</span>
+    </div>
+
+    <!-- S1 -->
+    <div class="api-card" id="s1">
+      <div class="api-header">
+        <span class="method POST">POST</span>
+        <span class="endpoint">/webhook/line</span>
+        <span class="api-desc">รับข้อความจาก LINE Platform (LINE → Bot)</span>
+      </div>
+      <div class="api-body">
+        <div class="info">🔒 ใช้ HMAC-SHA256 verify signature อัตโนมัติ — LINE Platform เรียก endpoint นี้เองทุกครั้งที่ลูกค้าส่งข้อความ ไม่ต้อง Dev เรียกเอง</div>
+
+        <h4>Flow เมื่อลูกค้าพิมพ์ข้อความ</h4>
+        <div class="flow">
+          <div class="flow-step green">ลูกค้าพิมพ์ใน LINE</div>
+          <div class="flow-arrow">→</div>
+          <div class="flow-step blue">LINE Platform</div>
+          <div class="flow-arrow">→</div>
+          <div class="flow-step orange">POST /webhook/line</div>
+          <div class="flow-arrow">→</div>
+          <div class="flow-step green">Bot ประมวลผล</div>
         </div>
+
+        <h4>พฤติกรรมของ Bot</h4>
+        <table class="field-table">
+          <tr><th>ข้อความลูกค้า</th><th>Bot ทำอะไร</th></tr>
+          <tr><td>ตรงกับ Keyword เช่น "เข้าระบบไม่ได้"</td><td>สร้าง Ticket อัตโนมัติ → ตอบกลับ Ticket ID</td></tr>
+          <tr><td>"ตรวจสอบ #26003615"</td><td>ดึงสถานะ Ticket → ตอบกลับสถานะล่าสุด</td></tr>
+          <tr><td>ข้อความอื่น</td><td>ไม่ตอบ (เจ้าหน้าที่ดูใน LINE OA Manager)</td></tr>
+        </table>
+
+        <h4>ข้อมูลที่ Bot ส่งไป POST /tickets เมื่อ keyword match</h4>
+        <pre><button class="copy-btn" onclick="cp(this)">copy</button>{
+  <span class="k">"title"</span>:        <span class="s">"เข้าระบบไม่ได้"</span>,        <span class="c">// ข้อความลูกค้า (เรื่อง)</span>
+  <span class="k">"detail"</span>:       <span class="s">"เข้าระบบไม่ได้"</span>,        <span class="c">// ข้อความลูกค้า (รายละเอียด)</span>
+  <span class="k">"lineUserId"</span>:   <span class="s">"U0df970281236ea..."</span>,   <span class="c">// LINE User ID</span>
+  <span class="k">"reporterName"</span>: <span class="s">"สมชาย ใจดี"</span>,           <span class="c">// ชื่อ LINE Display Name</span>
+  <span class="k">"service"</span>:      <span class="s">"EHP CIS"</span>,              <span class="c">// จาก Settings</span>
+  <span class="k">"category"</span>:     <span class="s">"ปัญหาการใช้งานทั่วไป"</span>,  <span class="c">// จาก Settings</span>
+  <span class="k">"subCategory"</span>:  <span class="s">"การใช้งานทั่วไป"</span>,      <span class="c">// จาก Settings</span>
+  <span class="k">"sla"</span>:          <span class="s">"4H"</span>,                   <span class="c">// จาก Settings</span>
+  <span class="k">"problemDate"</span>:  <span class="s">"2026-05-12"</span>,           <span class="c">// วันที่ปัจจุบัน (Auto)</span>
+  <span class="k">"problemTime"</span>:  <span class="s">"10:33"</span>                 <span class="c">// เวลาปัจจุบัน (Auto)</span>
+}</pre>
+      </div>
+    </div>
+
+    <!-- S2 -->
+    <div class="api-card" id="s2">
+      <div class="api-header">
+        <span class="method POST">POST</span>
+        <span class="endpoint">/notify/ticket-closed</span>
+        <span class="api-desc">Ticket System แจ้ง Bot เมื่อปิด Ticket</span>
+      </div>
+      <div class="api-body">
+        <div class="warn">⚠️ Ticket System ต้องเรียก endpoint นี้ทุกครั้งที่ปิด/อัปเดตสถานะ Ticket เพื่อให้ Bot แจ้งลูกค้าใน LINE</div>
+
+        <h4>Request Body</h4>
+        <table class="field-table">
+          <tr><th>Field</th><th>Type</th><th>Required</th><th>ที่มา (จากฟอร์ม)</th></tr>
+          <tr><td><code>ticketId</code></td><td>string</td><td><span class="badge red">บังคับ</span></td><td>รหัส Ticket</td></tr>
+          <tr><td><code>title</code></td><td>string</td><td><span class="badge red">บังคับ</span></td><td>หัวข้อปัญหา</td></tr>
+          <tr><td><code>lineUserId</code></td><td>string</td><td><span class="badge red">บังคับ</span></td><td>LINE User ID ลูกค้า (เก็บตอนสร้าง Ticket)</td></tr>
+          <tr><td><code>status</code></td><td>string</td><td><span class="badge green">แนะนำ</span></td><td>สถานะ → "เสร็จสิ้น"</td></tr>
+          <tr><td><code>resolvedBy</code></td><td>string</td><td><span class="badge green">แนะนำ</span></td><td>ผู้แก้ปัญหา</td></tr>
+          <tr><td><code>resolution</code></td><td>string</td><td><span class="badge green">แนะนำ</span></td><td>วิธีแก้ไข</td></tr>
+          <tr><td><code>cause</code></td><td>string</td><td><span class="badge orange">ไม่บังคับ</span></td><td>สาเหตุ</td></tr>
+          <tr><td><code>resolvedDate</code></td><td>string</td><td><span class="badge green">แนะนำ</span></td><td>วันที่เสร็จสิ้น (YYYY-MM-DD)</td></tr>
+          <tr><td><code>resolvedTime</code></td><td>string</td><td><span class="badge green">แนะนำ</span></td><td>เวลาเสร็จสิ้น (HH:MM)</td></tr>
+          <tr><td><code>remark</code></td><td>string</td><td><span class="badge orange">ไม่บังคับ</span></td><td>หมายเหตุ</td></tr>
+        </table>
+
+        <h4>ตัวอย่าง Request</h4>
+        <pre><button class="copy-btn" onclick="cp(this)">copy</button>POST http://bot-server:3000/notify/ticket-closed
+Content-Type: application/json
+
+{
+  <span class="k">"ticketId"</span>:     <span class="s">"26003615"</span>,
+  <span class="k">"title"</span>:        <span class="s">"ทางคลินิกจะพรินต์ OPDCARD..."</span>,
+  <span class="k">"lineUserId"</span>:   <span class="s">"U0df970281236ea540eef7b92ff5ab406"</span>,
+  <span class="k">"status"</span>:       <span class="s">"เสร็จสิ้น"</span>,
+  <span class="k">"resolvedBy"</span>:   <span class="s">"วันดา ภารสถิตย์"</span>,
+  <span class="k">"resolution"</span>:   <span class="s">"แนะนำวิธีนำไฟล์เข้าระบบใหม่"</span>,
+  <span class="k">"cause"</span>:        <span class="s">"ไฟล์ JA-POST ไม่ถูก format"</span>,
+  <span class="k">"resolvedDate"</span>: <span class="s">"2026-05-12"</span>,
+  <span class="k">"resolvedTime"</span>: <span class="s">"10:58"</span>,
+  <span class="k">"remark"</span>:       <span class="s">"หมายเหตุเพิ่มเติม"</span>
+}</pre>
+
+        <h4>ข้อความที่ Bot ส่งหาลูกค้าใน LINE</h4>
+        <pre style="background:#075e54;color:#dcf8c6">📋 สถานะ Ticket 26003615
+🔴 ปัญหา: ทางคลินิกจะพรินต์ OPDCARD...
+⚙️ สถานะ: 🟢 เสร็จสิ้น
+🔧 วิธีการแก้ไข: แนะนำวิธีนำไฟล์เข้าระบบใหม่
+👨‍💻 ผู้ดำเนินการแก้ไข: วันดา ภารสถิตย์
+📌 สาเหตุ: ไฟล์ JA-POST ไม่ถูก format
+วันที่เวลาในการแก้ไข: 2026-05-12 10:58
+
+หากยังมีปัญหาหรือข้อสงสัย สามารถแจ้งกลับมาได้เลยนะครับ 😊</pre>
+
+        <h4>Response</h4>
+        <pre><button class="copy-btn" onclick="cp(this)">copy</button>{ <span class="k">"success"</span>: <span class="n">true</span> }</pre>
+      </div>
+    </div>
+
+    <!-- S3 -->
+    <div class="api-card" id="s3">
+      <div class="api-header">
+        <span class="method POST">POST</span>
+        <span class="endpoint">/notify/ticket-opened</span>
+        <span class="api-desc">Ticket System แจ้ง Bot เมื่อเปิด Ticket (กรณีสร้างจากระบบ ไม่ผ่าน LINE)</span>
+      </div>
+      <div class="api-body">
+        <h4>Request Body</h4>
+        <pre><button class="copy-btn" onclick="cp(this)">copy</button>{
+  <span class="k">"ticketId"</span>:   <span class="s">"26003615"</span>,              <span class="c">// required</span>
+  <span class="k">"title"</span>:      <span class="s">"หัวข้อปัญหา"</span>,            <span class="c">// required</span>
+  <span class="k">"lineUserId"</span>: <span class="s">"U0df970281236ea..."</span>    <span class="c">// required</span>
+}</pre>
+
+        <h4>ข้อความที่ Bot ส่งหาลูกค้า</h4>
+        <pre style="background:#075e54;color:#dcf8c6">✅ เปิด Ticket เรียบร้อยแล้วครับ
+
+🔢 เลข Ticket: #26003615
+📌 หัวข้อ: หัวข้อปัญหา
+
+ทีมงานกำลังดำเนินการให้ครับ
+สามารถติดตามสถานะได้โดยพิมพ์:
+"ตรวจสอบ #26003615"</pre>
       </div>
     </div>
   </div>
 
-  <!-- Auth -->
-  <div class="section" id="auth">
-    <div class="section-title">2. Authentication</div>
-    <div class="endpoint-card">
-      <div class="endpoint-body">
-        <p style="font-size:14px;">ปัจจุบัน Bot ไม่ได้ส่ง Authorization Header ไปด้วย ถ้าระบบ Ticket ต้องการ Auth ให้แจ้งทีม Bot เพื่อเพิ่ม Header เช่น:</p>
-        <pre><span class="key">"Authorization"</span>: <span class="str">"Bearer YOUR_API_KEY"</span>
-<span class="key">"X-API-Key"</span>: <span class="str">"YOUR_API_KEY"</span></pre>
-      </div>
+  <!-- ==================== TICKET API ==================== -->
+  <div class="section">
+    <div class="section-title">
+      🎫 Ticket API
+      <span class="server-tag">localhost:4000</span>
+      <span class="section-sub">Bot เรียก endpoints เหล่านี้ → Dev ต้องพัฒนาให้ครบ</span>
     </div>
-  </div>
 
-  <!-- POST /tickets -->
-  <div class="section" id="create-ticket">
-    <div class="section-title">3. สร้าง Ticket ใหม่</div>
-    <div class="endpoint-card">
-      <div class="endpoint-header">
-        <span class="method post">POST</span>
-        <span class="endpoint-path">/api/tickets</span>
-        <span class="endpoint-desc">Bot เรียกเมื่อลูกค้าพิมข้อความที่ตรง keyword</span>
+    <div class="warn">⚠️ ปัจจุบัน ticket-api.js เก็บข้อมูลแบบ in-memory (หาย เมื่อ restart) Dev ต้องเชื่อมต่อฐานข้อมูลจริงและ implement endpoints ให้ครบ</div>
+
+    <!-- S4 -->
+    <div class="api-card" id="s4">
+      <div class="api-header">
+        <span class="method POST">POST</span>
+        <span class="endpoint">/tickets</span>
+        <span class="api-desc">Bot เรียกเพื่อสร้าง Ticket ใหม่อัตโนมัติ</span>
       </div>
-      <div class="endpoint-body">
-
-        <div class="sub-title">Request Body</div>
+      <div class="api-body">
+        <h4>Request Body (Bot ส่งมา)</h4>
         <table class="field-table">
           <tr><th>Field</th><th>Type</th><th>Required</th><th>คำอธิบาย</th></tr>
-          <tr>
-            <td class="field-name">title</td>
-            <td class="field-type">string</td>
-            <td><span class="required">REQUIRED</span></td>
-            <td>ข้อความที่ลูกค้าพิม เป็นหัวข้อปัญหา</td>
-          </tr>
-          <tr>
-            <td class="field-name">lineUserId</td>
-            <td class="field-type">string</td>
-            <td><span class="required">REQUIRED</span></td>
-            <td>LINE User ID ของลูกค้า ใช้ส่งแจ้งเตือนกลับ</td>
-          </tr>
-          <tr>
-            <td class="field-name">reporterName</td>
-            <td class="field-type">string</td>
-            <td><span class="optional">OPTIONAL</span></td>
-            <td>ชื่อ Display Name ของลูกค้าใน LINE</td>
-          </tr>
-          <tr>
-            <td class="field-name">service</td>
-            <td class="field-type">string</td>
-            <td><span class="optional">OPTIONAL</span></td>
-            <td>ชื่อ Service เช่น "EHP CIS"</td>
-          </tr>
-          <tr>
-            <td class="field-name">category</td>
-            <td class="field-type">string</td>
-            <td><span class="optional">OPTIONAL</span></td>
-            <td>หมวดหมู่ปัญหา</td>
-          </tr>
-          <tr>
-            <td class="field-name">subCategory</td>
-            <td class="field-type">string</td>
-            <td><span class="optional">OPTIONAL</span></td>
-            <td>หมวดหมู่ย่อย</td>
-          </tr>
+          <tr><td><code>title</code></td><td>string</td><td><span class="badge red">บังคับ</span></td><td>เรื่อง = ข้อความลูกค้า</td></tr>
+          <tr><td><code>detail</code></td><td>string</td><td><span class="badge green">แนะนำ</span></td><td>รายละเอียด = ข้อความลูกค้า</td></tr>
+          <tr><td><code>lineUserId</code></td><td>string</td><td><span class="badge red">บังคับ</span></td><td>LINE User ID (เก็บไว้เพื่อส่งข้อความกลับ)</td></tr>
+          <tr><td><code>reporterName</code></td><td>string</td><td></td><td>ชื่อผู้แจ้ง (LINE Display Name)</td></tr>
+          <tr><td><code>service</code></td><td>string</td><td></td><td>Service จาก Settings</td></tr>
+          <tr><td><code>category</code></td><td>string</td><td></td><td>Category จาก Settings</td></tr>
+          <tr><td><code>subCategory</code></td><td>string</td><td></td><td>Sub Category จาก Settings</td></tr>
+          <tr><td><code>sla</code></td><td>string</td><td></td><td>SLA จาก Settings เช่น "4H"</td></tr>
+          <tr><td><code>problemDate</code></td><td>string</td><td></td><td>วันที่พบปัญหา (YYYY-MM-DD)</td></tr>
+          <tr><td><code>problemTime</code></td><td>string</td><td></td><td>เวลาที่พบปัญหา (HH:MM)</td></tr>
         </table>
 
-        <div class="sub-title">ตัวอย่าง Request</div>
-        <pre>{
-  <span class="key">"title"</span>: <span class="str">"เข้าระบบไม่ได้"</span>,
-  <span class="key">"lineUserId"</span>: <span class="str">"U0df970281236ea540eef7b92ff5ab406"</span>,
-  <span class="key">"reporterName"</span>: <span class="str">"PAT"</span>,
-  <span class="key">"service"</span>: <span class="str">"EHP CIS"</span>,
-  <span class="key">"category"</span>: <span class="str">"ปัญหาการใช้งานทั่วไป"</span>,
-  <span class="key">"subCategory"</span>: <span class="str">"การใช้งานทั่วไป"</span>
+        <h4>Response ที่ต้องส่งกลับ (Bot ต้องการ)</h4>
+        <pre><button class="copy-btn" onclick="cp(this)">copy</button>{
+  <span class="k">"id"</span>:          <span class="s">"26003615"</span>,         <span class="c">// รหัส Ticket (required)</span>
+  <span class="k">"title"</span>:       <span class="s">"เข้าระบบไม่ได้"</span>,   <span class="c">// หัวข้อ</span>
+  <span class="k">"status"</span>:      <span class="s">"in_progress"</span>,      <span class="c">// สถานะเริ่มต้น</span>
+  <span class="k">"resolution"</span>:  <span class="s">""</span>,                  <span class="c">// ว่างตอนสร้าง</span>
+  <span class="k">"resolvedBy"</span>:  <span class="s">""</span>,                  <span class="c">// ว่างตอนสร้าง</span>
+  <span class="k">"resolvedAt"</span>:  <span class="n">null</span>,               <span class="c">// null ตอนสร้าง</span>
+  <span class="k">"updatedAt"</span>:   <span class="s">"2026-05-12T10:33:00.000Z"</span>
 }</pre>
 
-        <div class="sub-title">Response — 201 Created</div>
+        <div class="info">✅ หลังจาก POST Bot จะเรียก GET /tickets/{id} ทันทีเพื่อดึงข้อมูลเต็ม กรุณาส่ง <code>id</code> กลับมาให้ครบ</div>
+      </div>
+    </div>
+
+    <!-- S5 -->
+    <div class="api-card" id="s5">
+      <div class="api-header">
+        <span class="method GET">GET</span>
+        <span class="endpoint">/tickets/:id</span>
+        <span class="api-desc">Bot เรียกเพื่อดึงข้อมูล Ticket เต็ม (ใช้ 2 กรณี)</span>
+      </div>
+      <div class="api-body">
+        <div class="info">Bot เรียก endpoint นี้ 2 กรณี: (1) หลัง POST สร้าง Ticket และ (2) เมื่อลูกค้าพิมพ์ "ตรวจสอบ #id"</div>
+
+        <h4>Response ที่ต้องส่งกลับ</h4>
+        <pre><button class="copy-btn" onclick="cp(this)">copy</button>{
+  <span class="k">"id"</span>:          <span class="s">"26003615"</span>,
+  <span class="k">"title"</span>:       <span class="s">"เข้าระบบไม่ได้"</span>,
+  <span class="k">"status"</span>:      <span class="s">"in_progress"</span>,      <span class="c">// open | in_progress | closed | cancelled</span>
+  <span class="k">"resolution"</span>:  <span class="s">"แก้ไข config แล้ว"</span>,
+  <span class="k">"resolvedBy"</span>:  <span class="s">"วันดา ภารสถิตย์"</span>,
+  <span class="k">"resolvedAt"</span>:  <span class="s">"2026-05-12T10:58:00.000Z"</span>,  <span class="c">// null ถ้ายังไม่ปิด</span>
+  <span class="k">"updatedAt"</span>:   <span class="s">"2026-05-12T10:58:00.000Z"</span>,
+  <span class="k">"lineUserId"</span>:  <span class="s">"U0df970281236ea..."</span>       <span class="c">// สำคัญ! ใช้ส่งข้อความ LINE</span>
+}</pre>
+
+        <h4>ค่า status ที่รองรับ</h4>
         <table class="field-table">
-          <tr><th>Field</th><th>Type</th><th>คำอธิบาย</th></tr>
-          <tr><td class="field-name">id</td><td class="field-type">string</td><td>เลข Ticket ที่ระบบสร้างให้</td></tr>
-          <tr><td class="field-name">title</td><td class="field-type">string</td><td>หัวข้อปัญหา</td></tr>
-          <tr><td class="field-name">reporterName</td><td class="field-type">string</td><td>ชื่อผู้แจ้ง</td></tr>
-          <tr><td class="field-name">service</td><td class="field-type">string</td><td>ชื่อ Service</td></tr>
-          <tr><td class="field-name">category</td><td class="field-type">string</td><td>หมวดหมู่</td></tr>
-          <tr><td class="field-name">subCategory</td><td class="field-type">string</td><td>หมวดหมู่ย่อย</td></tr>
-          <tr><td class="field-name">resolution</td><td class="field-type">string</td><td>วิธีแก้ไข (ใส่ "" ถ้ายังไม่มี)</td></tr>
-          <tr><td class="field-name">createdAt</td><td class="field-type">string (ISO 8601)</td><td>วันเวลาที่รับเรื่อง</td></tr>
+          <tr><th>ค่า</th><th>Bot แสดงเป็น</th></tr>
+          <tr><td><code>open</code></td><td>🟡 เปิดแล้ว รอดำเนินการ</td></tr>
+          <tr><td><code>in_progress</code></td><td>🔵 กำลังดำเนินการ</td></tr>
+          <tr><td><code>closed</code></td><td>🟢 ดำเนินการเสร็จสิ้น</td></tr>
+          <tr><td><code>cancelled</code></td><td>🔴 ยกเลิกแล้ว</td></tr>
         </table>
 
-        <div class="sub-title">ตัวอย่าง Response</div>
-        <pre>{
-  <span class="key">"id"</span>: <span class="str">"1001"</span>,
-  <span class="key">"title"</span>: <span class="str">"เข้าระบบไม่ได้"</span>,
-  <span class="key">"reporterName"</span>: <span class="str">"PAT"</span>,
-  <span class="key">"service"</span>: <span class="str">"EHP CIS"</span>,
-  <span class="key">"category"</span>: <span class="str">"ปัญหาการใช้งานทั่วไป"</span>,
-  <span class="key">"subCategory"</span>: <span class="str">"การใช้งานทั่วไป"</span>,
-  <span class="key">"resolution"</span>: <span class="str">""</span>,
-  <span class="key">"createdAt"</span>: <span class="str">"2026-05-11T10:00:00.000Z"</span>
+        <h4>ข้อความที่ Bot ตอบลูกค้า (ตรวจสอบ #id)</h4>
+        <pre style="background:#075e54;color:#dcf8c6">📋 สถานะ Ticket 26003615
+🔴 ปัญหา: เข้าระบบไม่ได้
+⚙️ สถานะ: 🔵 กำลังดำเนินการ
+🔧 วิธีการแก้ไข: -
+👨‍💻 ผู้ดำเนินการแก้ไข: -
+🕐 อัปเดตล่าสุด: 12/5/2569 10:21:52
+วันที่เวลาในการแก้ไข:
+
+ติดตามสถานะได้โดยพิมพ์:
+"ตรวจสอบ #26003615"</pre>
+      </div>
+    </div>
+
+    <!-- S6 -->
+    <div class="api-card" id="s6">
+      <div class="api-header">
+        <span class="method PATCH">PATCH</span>
+        <span class="endpoint">/tickets/:id/status</span>
+        <span class="api-desc">Dashboard อัปเดตสถานะ Ticket</span>
+      </div>
+      <div class="api-body">
+        <h4>Request Body</h4>
+        <pre><button class="copy-btn" onclick="cp(this)">copy</button>{
+  <span class="k">"status"</span>:      <span class="s">"closed"</span>,            <span class="c">// open | in_progress | closed | cancelled</span>
+  <span class="k">"resolution"</span>:  <span class="s">"แก้ไข config แล้ว"</span>,  <span class="c">// วิธีแก้ไข</span>
+  <span class="k">"resolvedBy"</span>:  <span class="s">"วันดา ภารสถิตย์"</span>   <span class="c">// ผู้แก้ไข</span>
+}</pre>
+        <div class="info">เมื่อ <code>status = "closed"</code> ระบบต้อง set <code>resolvedAt</code> เป็น timestamp ปัจจุบันด้วย</div>
+
+        <h4>Response</h4>
+        <pre><button class="copy-btn" onclick="cp(this)">copy</button>{ <span class="c">// Ticket object ที่อัปเดตแล้ว</span>
+  <span class="k">"id"</span>: <span class="s">"26003615"</span>, <span class="k">"status"</span>: <span class="s">"closed"</span>,
+  <span class="k">"resolvedAt"</span>: <span class="s">"2026-05-12T10:58:00.000Z"</span>, ...
 }</pre>
       </div>
     </div>
-  </div>
 
-  <!-- GET /tickets/:id -->
-  <div class="section" id="get-ticket">
-    <div class="section-title">4. ดึงข้อมูล Ticket</div>
-    <div class="endpoint-card">
-      <div class="endpoint-header">
-        <span class="method get">GET</span>
-        <span class="endpoint-path">/api/tickets/:id</span>
-        <span class="endpoint-desc">Bot เรียกเมื่อลูกค้าพิม "ตรวจสอบ #001"</span>
+    <!-- S7 -->
+    <div class="api-card" id="s7">
+      <div class="api-header">
+        <span class="method GET">GET</span>
+        <span class="endpoint">/keywords</span>
+        <span class="api-desc" style="margin-right:8px">ดึงรายการ Keywords</span>
+        <span class="method POST">POST</span>
+        <span class="endpoint">/keywords</span>
+        <span class="api-desc" style="margin-right:8px">เพิ่ม Keyword</span>
+        <span class="method DELETE">DELETE</span>
+        <span class="endpoint">/keywords/:index</span>
+        <span class="api-desc">ลบ Keyword</span>
       </div>
-      <div class="endpoint-body">
+      <div class="api-body">
+        <div class="info">Bot โหลด Keywords ทุกครั้งที่ได้รับข้อความ — Keywords ที่ match จะสร้าง Ticket อัตโนมัติ รองรับการจับคู่แบบใกล้เคียง (bidirectional)</div>
+        <h4>GET Response / POST Body</h4>
+        <pre><button class="copy-btn" onclick="cp(this)">copy</button"><span class="c">// GET /keywords response:</span>
+[<span class="s">"เข้าระบบไม่ได้"</span>, <span class="s">"ส่งเคลมไม่ได้"</span>, <span class="s">"ระบบช้า"</span>, ...]
 
-        <div class="sub-title">Path Parameter</div>
+<span class="c">// POST /keywords body:</span>
+{ <span class="k">"keyword"</span>: <span class="s">"แจ้งปัญหา"</span> }</pre>
+      </div>
+    </div>
+
+    <!-- S8 -->
+    <div class="api-card" id="s8">
+      <div class="api-header">
+        <span class="method GET">GET</span>
+        <span class="endpoint">/settings</span>
+        <span class="api-desc" style="margin-right:8px">ดึงค่า Settings</span>
+        <span class="method PUT">PUT</span>
+        <span class="endpoint">/settings</span>
+        <span class="api-desc">อัปเดต Settings</span>
+      </div>
+      <div class="api-body">
+        <h4>Settings Object</h4>
+        <pre><button class="copy-btn" onclick="cp(this)">copy</button">{
+  <span class="k">"service"</span>:         <span class="s">"EHP CIS"</span>,
+  <span class="k">"category"</span>:        <span class="s">"ปัญหาการใช้งานทั่วไป"</span>,
+  <span class="k">"subCategory"</span>:     <span class="s">"การใช้งานทั่วไป"</span>,
+  <span class="k">"sla"</span>:             <span class="s">"4H"</span>,
+  <span class="k">"defaultStatus"</span>:   <span class="s">"กำลังดำเนินการ"</span>,
+  <span class="k">"msgTicketOpened"</span>: <span class="s">"📋 สถานะ Ticket {id}\n🔴 ปัญหา: {title}\n..."</span>,
+  <span class="k">"msgStatusCheck"</span>:  <span class="s">"📋 สถานะ Ticket {id}\n🔴 ปัญหา: {title}\n..."</span>
+}</pre>
+
+        <h4>ตัวแปรในข้อความ (Message Templates)</h4>
         <table class="field-table">
-          <tr><th>Parameter</th><th>Type</th><th>คำอธิบาย</th></tr>
-          <tr><td class="field-name">id</td><td class="field-type">string</td><td>เลข Ticket ID</td></tr>
-        </table>
-
-        <div class="sub-title">Response — 200 OK</div>
-        <table class="field-table">
-          <tr><th>Field</th><th>Type</th><th>คำอธิบาย</th></tr>
-          <tr><td class="field-name">id</td><td class="field-type">string</td><td>เลข Ticket</td></tr>
-          <tr><td class="field-name">title</td><td class="field-type">string</td><td>หัวข้อปัญหา</td></tr>
-          <tr><td class="field-name">status</td><td class="field-type">string</td><td>สถานะ: open / in_progress / closed / cancelled</td></tr>
-          <tr><td class="field-name">resolution</td><td class="field-type">string</td><td>วิธีแก้ไข (ถ้ายังไม่มีให้ส่ง "" หรือ null)</td></tr>
-          <tr><td class="field-name">updatedAt</td><td class="field-type">string (ISO 8601)</td><td>วันเวลาที่อัปเดตล่าสุด</td></tr>
-        </table>
-
-        <div class="sub-title">ตัวอย่าง Response</div>
-        <pre>{
-  <span class="key">"id"</span>: <span class="str">"1001"</span>,
-  <span class="key">"title"</span>: <span class="str">"เข้าระบบไม่ได้"</span>,
-  <span class="key">"status"</span>: <span class="str">"in_progress"</span>,
-  <span class="key">"resolution"</span>: <span class="str">"ทีมงานกำลังตรวจสอบ"</span>,
-  <span class="key">"updatedAt"</span>: <span class="str">"2026-05-11T11:30:00.000Z"</span>
-}</pre>
-      </div>
-    </div>
-  </div>
-
-  <!-- PATCH /tickets/:id/status -->
-  <div class="section" id="update-status">
-    <div class="section-title">5. อัปเดตสถานะ Ticket</div>
-    <div class="endpoint-card">
-      <div class="endpoint-header">
-        <span class="method patch">PATCH</span>
-        <span class="endpoint-path">/api/tickets/:id/status</span>
-        <span class="endpoint-desc">เรียกจาก Bot หรือระบบ Ticket เพื่ออัปเดตสถานะ</span>
-      </div>
-      <div class="endpoint-body">
-
-        <div class="sub-title">Request Body</div>
-        <table class="field-table">
-          <tr><th>Field</th><th>Type</th><th>Required</th><th>ค่าที่รับได้</th></tr>
-          <tr>
-            <td class="field-name">status</td>
-            <td class="field-type">string</td>
-            <td><span class="required">REQUIRED</span></td>
-            <td>open / in_progress / closed / cancelled</td>
-          </tr>
-        </table>
-
-        <div class="sub-title">ตัวอย่าง Response — 200 OK</div>
-        <pre>{
-  <span class="key">"id"</span>: <span class="str">"1001"</span>,
-  <span class="key">"status"</span>: <span class="str">"closed"</span>,
-  <span class="key">"updatedAt"</span>: <span class="str">"2026-05-11T14:00:00.000Z"</span>
-}</pre>
-
-        <div class="note">
-          💡 เมื่อปิด Ticket ให้ระบบ Ticket เรียก Bot ด้วย:<br>
-          <code>POST http://&lt;bot-server&gt;/notify/ticket-closed</code><br>
-          Body: <code>{ "ticketId": "1001", "title": "...", "lineUserId": "U..." }</code><br>
-          Bot จะส่งข้อความแจ้งลูกค้าใน LINE อัตโนมัติ
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Status Codes -->
-  <div class="section" id="status-codes">
-    <div class="section-title">6. Status Values</div>
-    <div class="endpoint-card">
-      <div class="endpoint-body">
-        <table class="status-table">
-          <tr><th>Value</th><th>ความหมาย</th><th>Bot แสดงผล</th></tr>
-          <tr>
-            <td><span class="field-name">open</span></td>
-            <td>เปิดแล้ว รอดำเนินการ</td>
-            <td>🟡 เปิดแล้ว รอดำเนินการ</td>
-          </tr>
-          <tr>
-            <td><span class="field-name">in_progress</span></td>
-            <td>กำลังดำเนินการ</td>
-            <td>🔵 กำลังดำเนินการ</td>
-          </tr>
-          <tr>
-            <td><span class="field-name">closed</span></td>
-            <td>ดำเนินการเสร็จสิ้น</td>
-            <td>🟢 ดำเนินการเสร็จสิ้น</td>
-          </tr>
-          <tr>
-            <td><span class="field-name">cancelled</span></td>
-            <td>ยกเลิกแล้ว</td>
-            <td>🔴 ยกเลิกแล้ว</td>
-          </tr>
+          <tr><th>ตัวแปร</th><th>ค่าที่ใส่</th></tr>
+          <tr><td><code>{id}</code></td><td>รหัส Ticket</td></tr>
+          <tr><td><code>{title}</code></td><td>หัวข้อปัญหา</td></tr>
+          <tr><td><code>{status}</code></td><td>สถานะ (แปลเป็นภาษาไทยแล้ว)</td></tr>
+          <tr><td><code>{resolution}</code></td><td>วิธีการแก้ไข</td></tr>
+          <tr><td><code>{resolvedBy}</code></td><td>ผู้ดำเนินการแก้ไข</td></tr>
+          <tr><td><code>{updatedAt}</code></td><td>วันเวลาที่อัปเดตล่าสุด</td></tr>
+          <tr><td><code>{resolvedAt}</code></td><td>วันเวลาที่แก้ไขเสร็จ (ว่างถ้ายังไม่ปิด)</td></tr>
         </table>
       </div>
     </div>
+
   </div>
 
-  <!-- Error Format -->
-  <div class="section" id="error-format">
-    <div class="section-title">7. Error Response Format</div>
-    <div class="endpoint-card">
-      <div class="endpoint-body">
-        <p style="font-size:14px;margin-bottom:12px;">เมื่อเกิดข้อผิดพลาด ให้ส่ง HTTP Status Code ที่ถูกต้องพร้อม body:</p>
-        <pre>{
-  <span class="key">"error"</span>: <span class="str">"ข้อความอธิบายข้อผิดพลาด"</span>
-}</pre>
-        <table class="field-table" style="margin-top:16px;">
-          <tr><th>HTTP Status</th><th>ใช้เมื่อ</th></tr>
-          <tr><td>400</td><td>Request ไม่ถูกต้อง เช่น ขาด field</td></tr>
-          <tr><td>401</td><td>Authentication ล้มเหลว</td></tr>
-          <tr><td>404</td><td>ไม่พบ Ticket ID ที่ระบุ</td></tr>
-          <tr><td>500</td><td>Server error ภายใน</td></tr>
-        </table>
-      </div>
-    </div>
-  </div>
-
+  <footer>
+    EHP LINE Chatbot — API Document &nbsp;|&nbsp; Bot port 3000 · Ticket API port 4000
+  </footer>
 </div>
 
-<footer>
-  EHP LINE Chatbot Integration — API Document v1.0 | สร้างเมื่อ 11 พฤษภาคม 2569
-</footer>
-
+<script>
+function cp(btn) {
+  const text = btn.parentElement.innerText.replace('copy','').replace('copied!','').trim();
+  navigator.clipboard.writeText(text).then(() => {
+    btn.textContent = 'copied!'; btn.classList.add('copied');
+    setTimeout(() => { btn.textContent = 'copy'; btn.classList.remove('copied'); }, 2000);
+  });
+}
+</script>
 </body>
 </html>
