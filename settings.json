@@ -2,8 +2,9 @@
   "service": "EHP CIS",
   "category": "ปัญหาการใช้งานทั่วไป",
   "subCategory": "การใช้งานทั่วไป",
+  "sla": "",
   "defaultStatus": "กำลังดำเนินการ",
   "welcomeMessage": "รับเรื่องแล้วครับ คุณ",
-  "msgTicketOpened": "📋 Ticket: #{id}\n🔴 ปัญหา: {title}\n👤 ผู้แจ้ง: {reporterName}\n🏢 Service: {service}\n📂 Category: {category}\n📌 Sub Category: {subCategory}\n⚙️ สถานะ: {defaultStatus}\n🔧 วิธีการแก้ไข: {resolution}\n📅 รับเรื่องวันที่: {createdAt}\n\nติดตามสถานะได้โดยพิมพ์:\n\"ตรวจสอบ #{id}\"",
-  "msgStatusCheck": "📋 สถานะ Ticket #{id}\n🔴 ปัญหา: {title}\n⚙️ สถานะ: {status}\n🔧 วิธีการแก้ไข: {resolution}\n👨‍💻 ผู้ดำเนินการแก้ไข: {resolvedBy}\n{dateInfo}\n\nติดตามสถานะได้โดยพิมพ์:\n\"ตรวจสอบ #{id}\""
+  "msgTicketOpened": "📋 สถานะ Ticket {id}\n🔴 ปัญหา: {title}\n⚙️ สถานะ: {status}\n🔧 วิธีการแก้ไข: {resolution}\n👨‍💻 ผู้ดำเนินการแก้ไข: {resolvedBy}\n🕐 อัปเดตล่าสุด: {updatedAt}\nวันที่เวลาในการแก้ไข: {resolvedAt}\n\nติดตามสถานะได้โดยพิมพ์:\n\"ตรวจสอบ #{id}\"",
+  "msgStatusCheck": "📋 สถานะ Ticket {id}\n🔴 ปัญหา: {title}\n⚙️ สถานะ: {status}\n🔧 วิธีการแก้ไข: {resolution}\n👨‍💻 ผู้ดำเนินการแก้ไข: {resolvedBy}\n🕐 อัปเดตล่าสุด: {updatedAt}\nวันที่เวลาในการแก้ไข: {resolvedAt}\n\nติดตามสถานะได้โดยพิมพ์:\n\"ตรวจสอบ #{id}\""
 }

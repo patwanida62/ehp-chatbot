@@ -369,6 +369,10 @@
               <input class="input" id="s-subCategory" />
             </div>
             <div class="form-group">
+              <label class="form-label">SLA</label>
+              <input class="input" id="s-sla" placeholder="เช่น 4H, 8H, 1D" />
+            </div>
+            <div class="form-group">
               <label class="form-label">สถานะเริ่มต้น</label>
               <input class="input" id="s-defaultStatus" />
             </div>
@@ -390,20 +394,14 @@
               <div style="display:flex;flex-wrap:wrap;gap:8px;font-size:12px">
                 <span style="background:#dbeafe;color:#1e40af;padding:2px 9px;border-radius:6px;font-family:monospace">{id}</span>
                 <span style="background:#dbeafe;color:#1e40af;padding:2px 9px;border-radius:6px;font-family:monospace">{title}</span>
-                <span style="background:#dbeafe;color:#1e40af;padding:2px 9px;border-radius:6px;font-family:monospace">{reporterName}</span>
-                <span style="background:#dbeafe;color:#1e40af;padding:2px 9px;border-radius:6px;font-family:monospace">{service}</span>
-                <span style="background:#dbeafe;color:#1e40af;padding:2px 9px;border-radius:6px;font-family:monospace">{category}</span>
-                <span style="background:#dbeafe;color:#1e40af;padding:2px 9px;border-radius:6px;font-family:monospace">{subCategory}</span>
-                <span style="background:#dbeafe;color:#1e40af;padding:2px 9px;border-radius:6px;font-family:monospace">{defaultStatus}</span>
+                <span style="background:#dbeafe;color:#1e40af;padding:2px 9px;border-radius:6px;font-family:monospace">{status}</span>
                 <span style="background:#dbeafe;color:#1e40af;padding:2px 9px;border-radius:6px;font-family:monospace">{resolution}</span>
-                <span style="background:#dbeafe;color:#1e40af;padding:2px 9px;border-radius:6px;font-family:monospace">{createdAt}</span>
-                <span style="background:#dcfce7;color:#14532d;padding:2px 9px;border-radius:6px;font-family:monospace">{status}</span>
-                <span style="background:#dcfce7;color:#14532d;padding:2px 9px;border-radius:6px;font-family:monospace">{resolvedBy}</span>
-                <span style="background:#dcfce7;color:#14532d;padding:2px 9px;border-radius:6px;font-family:monospace">{dateInfo}</span>
+                <span style="background:#dbeafe;color:#1e40af;padding:2px 9px;border-radius:6px;font-family:monospace">{resolvedBy}</span>
+                <span style="background:#dbeafe;color:#1e40af;padding:2px 9px;border-radius:6px;font-family:monospace">{updatedAt}</span>
+                <span style="background:#dbeafe;color:#1e40af;padding:2px 9px;border-radius:6px;font-family:monospace">{resolvedAt}</span>
               </div>
               <div style="font-size:11px;color:var(--sub);margin-top:8px">
-                🔵 = ใช้ได้ในข้อความเปิด Ticket &nbsp;|&nbsp; 🟢 = ใช้ได้ในข้อความตรวจสอบสถานะ &nbsp;|&nbsp;
-                <code style="font-size:11px">{dateInfo}</code> = แสดงวันแก้ไขเสร็จ (ถ้าปิด) หรือวันอัปเดตล่าสุด
+                <code style="font-size:11px">{resolvedAt}</code> = แสดงวันที่แก้ไขเสร็จ (ว่างเปล่าถ้ายังไม่ปิด Ticket)
               </div>
             </div>
 
@@ -773,6 +771,7 @@ async function loadSettings() {
     document.getElementById('s-service').value          = s.service          || '';
     document.getElementById('s-category').value         = s.category         || '';
     document.getElementById('s-subCategory').value      = s.subCategory      || '';
+    document.getElementById('s-sla').value              = s.sla              || '';
     document.getElementById('s-defaultStatus').value    = s.defaultStatus    || '';
     document.getElementById('s-msgTicketOpened').value  = s.msgTicketOpened  || DEFAULT_MSG_TICKET_OPENED;
     document.getElementById('s-msgStatusCheck').value   = s.msgStatusCheck   || DEFAULT_MSG_STATUS_CHECK;
@@ -782,12 +781,13 @@ async function loadSettings() {
 
 async function saveSettings() {
   const body = {
-    service:            document.getElementById('s-service').value,
-    category:           document.getElementById('s-category').value,
-    subCategory:        document.getElementById('s-subCategory').value,
-    defaultStatus:      document.getElementById('s-defaultStatus').value,
-    msgTicketOpened:    document.getElementById('s-msgTicketOpened').value,
-    msgStatusCheck:     document.getElementById('s-msgStatusCheck').value,
+    service:         document.getElementById('s-service').value,
+    category:        document.getElementById('s-category').value,
+    subCategory:     document.getElementById('s-subCategory').value,
+    sla:             document.getElementById('s-sla').value,
+    defaultStatus:   document.getElementById('s-defaultStatus').value,
+    msgTicketOpened: document.getElementById('s-msgTicketOpened').value,
+    msgStatusCheck:  document.getElementById('s-msgStatusCheck').value,
   };
   try {
     await fetch(`${API}/settings`, {
@@ -819,15 +819,15 @@ function updatePreviewFromTemplate() {
   const tpl2 = document.getElementById('s-msgStatusCheck').value  || DEFAULT_MSG_STATUS_CHECK;
 
   document.getElementById('preview-open').textContent = buildMessage(tpl1, {
-    id: '0042', title: 'เข้าระบบไม่ได้', reporterName: 'สมชาย ใจดี',
-    service: s.service, category: s.category, subCategory: s.subCategory,
-    defaultStatus: s.defaultStatus, resolution: '-', createdAt: now,
+    id: '26003615', title: 'เข้าระบบไม่ได้',
+    status: '🔵 กำลังดำเนินการ', resolution: '-', resolvedBy: '-',
+    updatedAt: now, resolvedAt: '',
   });
 
   document.getElementById('preview-status').textContent = buildMessage(tpl2, {
-    id: '0042', title: 'เข้าระบบไม่ได้',
+    id: '26003615', title: 'เข้าระบบไม่ได้',
     status: '🔵 กำลังดำเนินการ', resolution: '-', resolvedBy: '-',
-    dateInfo: `🕐 อัปเดตล่าสุด: ${now}`,
+    updatedAt: now, resolvedAt: '',
   });
 }
 

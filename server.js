@@ -30,14 +30,15 @@ app.use(
 // DEFAULT MESSAGE TEMPLATES (ใช้เมื่อ settings ไม่มีค่า)
 // ============================================================
 const DEFAULT_MSG_TICKET_OPENED =
-  `📋 Ticket: #{id}\n🔴 ปัญหา: {title}\n👤 ผู้แจ้ง: {reporterName}\n` +
-  `🏢 Service: {service}\n📂 Category: {category}\n📌 Sub Category: {subCategory}\n` +
-  `⚙️ สถานะ: {defaultStatus}\n🔧 วิธีการแก้ไข: {resolution}\n📅 รับเรื่องวันที่: {createdAt}\n\n` +
+  `📋 สถานะ Ticket {id}\n🔴 ปัญหา: {title}\n⚙️ สถานะ: {status}\n` +
+  `🔧 วิธีการแก้ไข: {resolution}\n👨‍💻 ผู้ดำเนินการแก้ไข: {resolvedBy}\n` +
+  `🕐 อัปเดตล่าสุด: {updatedAt}\nวันที่เวลาในการแก้ไข: {resolvedAt}\n\n` +
   `ติดตามสถานะได้โดยพิมพ์:\n"ตรวจสอบ #{id}"`;
 
 const DEFAULT_MSG_STATUS_CHECK =
-  `📋 สถานะ Ticket #{id}\n🔴 ปัญหา: {title}\n⚙️ สถานะ: {status}\n` +
-  `🔧 วิธีการแก้ไข: {resolution}\n👨‍💻 ผู้ดำเนินการแก้ไข: {resolvedBy}\n{dateInfo}\n\n` +
+  `📋 สถานะ Ticket {id}\n🔴 ปัญหา: {title}\n⚙️ สถานะ: {status}\n` +
+  `🔧 วิธีการแก้ไข: {resolution}\n👨‍💻 ผู้ดำเนินการแก้ไข: {resolvedBy}\n` +
+  `🕐 อัปเดตล่าสุด: {updatedAt}\nวันที่เวลาในการแก้ไข: {resolvedAt}\n\n` +
   `ติดตามสถานะได้โดยพิมพ์:\n"ตรวจสอบ #{id}"`;
 
 // ============================================================
@@ -153,14 +154,21 @@ app.post('/webhook/line', async (req, res) => {
           getLineDisplayName(userId),
           axios.get(`${TICKET_API_BASE_URL}/settings`).then((r) => r.data),
         ]);
-        // 1. สร้าง Ticket → ได้ id กลับมา
+        // 1. สร้าง Ticket → ส่งข้อมูลครบตาม form Ticket จริง
+        const now = new Date();
+        const problemDate = now.toISOString().split('T')[0];
+        const problemTime = now.toTimeString().slice(0, 5);
         const createRes = await axios.post(`${TICKET_API_BASE_URL}/tickets`, {
-          title: text.trim(),
-          lineUserId: userId,
+          title:        text.trim(),
+          detail:       text.trim(),
+          lineUserId:   userId,
           reporterName: displayName,
-          service: settings.service,
-          category: settings.category,
-          subCategory: settings.subCategory,
+          service:      settings.service,
+          category:     settings.category,
+          subCategory:  settings.subCategory,
+          sla:          settings.sla || '',
+          problemDate,
+          problemTime,
         });
         const ticketId = createRes.data.id;
 
@@ -169,18 +177,15 @@ app.post('/webhook/line', async (req, res) => {
         const ticket = ticketRes.data;
 
         // 3. ตอบลูกค้าด้วยข้อมูลจาก GET /tickets/:id
-        const createdDate = new Date(ticket.createdAt).toLocaleString('th-TH');
         const template = settings.msgTicketOpened || DEFAULT_MSG_TICKET_OPENED;
         const msgText = buildMessage(template, {
-          id:            ticket.id,
-          title:         ticket.title,
-          reporterName:  ticket.reporterName,
-          service:       ticket.service,
-          category:      ticket.category,
-          subCategory:   ticket.subCategory,
-          defaultStatus: settings.defaultStatus,
-          resolution:    ticket.resolution || '-',
-          createdAt:     createdDate,
+          id:         ticket.id,
+          title:      ticket.title,
+          status:     translateStatus(ticket.status),
+          resolution: ticket.resolution || '-',
+          resolvedBy: ticket.resolvedBy || '-',
+          updatedAt:  new Date(ticket.updatedAt).toLocaleString('th-TH'),
+          resolvedAt: ticket.resolvedAt ? new Date(ticket.resolvedAt).toLocaleString('th-TH') : '',
         });
         await sendLineMessage(userId, [{ type: 'text', text: msgText }]);
         console.log(`[TICKET] Auto-created #${ticket.id} for "${displayName}" keyword="${matchedKeyword}"`);
@@ -199,22 +204,17 @@ app.post('/webhook/line', async (req, res) => {
       try {
         const res2 = await axios.get(`${TICKET_API_BASE_URL}/tickets/${ticketId}`);
         const ticket = res2.data;
-        const settingsRes  = await axios.get(`${TICKET_API_BASE_URL}/settings`);
-        const settings2    = settingsRes.data;
-        const updatedDate  = new Date(ticket.updatedAt).toLocaleString('th-TH');
-        const resolvedDate = ticket.resolvedAt ? new Date(ticket.resolvedAt).toLocaleString('th-TH') : '-';
-        const isClosed     = ticket.status === 'closed';
-        const dateInfo     = isClosed
-          ? `✅ วันที่แก้ไขเสร็จ: ${resolvedDate}`
-          : `🕐 อัปเดตล่าสุด: ${updatedDate}`;
-        const template2 = settings2.msgStatusCheck || DEFAULT_MSG_STATUS_CHECK;
-        const msgText2 = buildMessage(template2, {
+        const settingsRes = await axios.get(`${TICKET_API_BASE_URL}/settings`);
+        const settings2   = settingsRes.data;
+        const template2   = settings2.msgStatusCheck || DEFAULT_MSG_STATUS_CHECK;
+        const msgText2    = buildMessage(template2, {
           id:         ticket.id,
           title:      ticket.title,
           status:     translateStatus(ticket.status),
           resolution: ticket.resolution || '-',
           resolvedBy: ticket.resolvedBy || '-',
-          dateInfo,
+          updatedAt:  new Date(ticket.updatedAt).toLocaleString('th-TH'),
+          resolvedAt: ticket.resolvedAt ? new Date(ticket.resolvedAt).toLocaleString('th-TH') : '',
         });
         await sendLineMessage(userId, [{ type: 'text', text: msgText2 }]);
       } catch {
