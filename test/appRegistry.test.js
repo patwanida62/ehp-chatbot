@@ -1,9 +1,8 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('fs');
-const os = require('os');
 const path = require('path');
-const { buildAppRegistry, loadAppRegistry } = require('../src/config/appRegistry');
+const { buildAppRegistry } = require('../src/config/appRegistry');
 
 const SECRET = 'x'.repeat(20);
 const validApp = (overrides = {}) => ({
@@ -46,20 +45,6 @@ test('rejects invalid ids, auth types, short secrets, empty events and duplicate
   assert.throws(() => buildAppRegistry([validApp({ allowedEvents: [] })]), /allowedEvents/);
   assert.throws(() => buildAppRegistry([validApp(), validApp()]), /Duplicate app id/);
   assert.throws(() => buildAppRegistry({}), /JSON array/);
-});
-
-test('loadAppRegistry returns an empty registry when the file does not exist', () => {
-  const registry = loadAppRegistry(path.join(os.tmpdir(), 'does-not-exist-apps.json'));
-
-  assert.equal(registry.size, 0);
-});
-
-test('loadAppRegistry reads and validates a JSON file', (t) => {
-  const file = path.join(fs.mkdtempSync(path.join(os.tmpdir(), 'apps-')), 'apps.json');
-  fs.writeFileSync(file, JSON.stringify([validApp()]));
-  t.after(() => fs.rmSync(path.dirname(file), { recursive: true, force: true }));
-
-  assert.deepEqual([...loadAppRegistry(file).keys()], ['ehp-cis']);
 });
 
 test('the shipped apps.example.json is a valid config', () => {

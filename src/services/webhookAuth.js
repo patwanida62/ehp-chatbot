@@ -1,4 +1,5 @@
 const crypto = require('crypto');
+const { safeEqual } = require('../utils/safeEqual');
 
 const SIGNATURE_HEADER = 'x-webhook-signature';
 const TIMESTAMP_HEADER = 'x-webhook-timestamp';
@@ -7,12 +8,6 @@ const DEFAULT_TOLERANCE_SEC = 300;
 
 const ok = () => ({ ok: true });
 const fail = (reason) => ({ ok: false, reason });
-
-function safeEqual(a, b) {
-  const bufA = Buffer.from(String(a));
-  const bufB = Buffer.from(String(b));
-  return bufA.length === bufB.length && crypto.timingSafeEqual(bufA, bufB);
-}
 
 /** Signature = "sha256=" + hex(HMAC-SHA256(secret, `${timestamp}.${rawBody}`)). */
 function computeSignature(secret, timestamp, rawBody) {

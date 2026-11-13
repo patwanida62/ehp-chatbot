@@ -1,5 +1,3 @@
-const fs = require('fs');
-
 const APP_ID_PATTERN = /^[a-z0-9][a-z0-9-]{1,62}$/;
 const AUTH_TYPES = Object.freeze(['hmac', 'apiKey']);
 const ENV_PREFIX = 'env:';
@@ -60,11 +58,4 @@ function buildAppRegistry(rawApps, env = process.env) {
   return registry;
 }
 
-/** Loads apps from a JSON file. A missing file means no apps are registered. */
-function loadAppRegistry(filePath, env = process.env) {
-  if (!fs.existsSync(filePath)) return new Map();
-  const rawApps = JSON.parse(fs.readFileSync(filePath, 'utf8'));
-  return buildAppRegistry(rawApps, env);
-}
-
-module.exports = { buildAppRegistry, loadAppRegistry };
+module.exports = { buildAppRegistry };

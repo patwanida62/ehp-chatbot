@@ -1,0 +1,552 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>EHP Chatbot — Webhook Apps</title>
+  <style>
+    :root {
+      --brand: #06c755;
+      --brand-hover: #05a847;
+      --brand-soft: #e8f8ee;
+      --danger: #e53935;
+      --danger-soft: #fdecea;
+      --warn-soft: #fff6e0;
+      --warn-text: #8a5a00;
+      --bg: #f0f2f5;
+      --surface: #ffffff;
+      --surface-alt: #f8f9fa;
+      --border: #dddddd;
+      --text: #333333;
+      --text-strong: #111111;
+      --text-muted: #6b6b6b;
+      --radius: 12px;
+      --radius-sm: 8px;
+      --shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+      --space-1: 4px;
+      --space-2: 8px;
+      --space-3: 12px;
+      --space-4: 16px;
+      --space-5: 24px;
+      --font: 'Segoe UI', 'Sarabun', 'Noto Sans Thai', sans-serif;
+      --mono: Consolas, 'Courier New', monospace;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: var(--font); background: var(--bg); color: var(--text); line-height: 1.5; }
+
+    header { background: var(--brand); color: #fff; padding: var(--space-4) var(--space-5); box-shadow: 0 2px 8px rgba(0,0,0,.15); }
+    header .inner { max-width: 960px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center; gap: var(--space-3); flex-wrap: wrap; }
+    header h1 { font-size: 20px; font-weight: 600; }
+    header p { font-size: 13px; opacity: .9; }
+
+    main { max-width: 960px; margin: 0 auto; padding: var(--space-5) var(--space-4) 48px; }
+
+    .card { background: var(--surface); border-radius: var(--radius); padding: var(--space-5); box-shadow: var(--shadow); margin-bottom: var(--space-5); }
+    .card h2 { font-size: 16px; font-weight: 600; color: var(--text-strong); margin-bottom: var(--space-4); }
+    .toolbar { display: flex; justify-content: space-between; align-items: center; gap: var(--space-3); margin-bottom: var(--space-4); flex-wrap: wrap; }
+    .toolbar h2 { margin: 0; }
+
+    .btn { padding: 10px 18px; border: none; border-radius: var(--radius-sm); font: inherit; font-size: 14px; font-weight: 600; cursor: pointer; transition: background .2s; min-height: 40px; }
+    .btn:focus-visible, input:focus-visible, select:focus-visible { outline: 3px solid var(--brand); outline-offset: 2px; }
+    .btn-primary { background: var(--brand); color: #fff; }
+    .btn-primary:hover { background: var(--brand-hover); }
+    .btn-secondary { background: var(--surface-alt); color: var(--text); border: 1px solid var(--border); }
+    .btn-secondary:hover { background: #eceef1; }
+    .btn-danger { background: var(--surface); color: var(--danger); border: 1px solid var(--danger); }
+    .btn-danger:hover { background: var(--danger-soft); }
+    .btn-light { background: rgba(255,255,255,.2); color: #fff; }
+    .btn[disabled] { opacity: .6; cursor: wait; }
+    .btn-sm { padding: 6px 12px; min-height: 34px; font-size: 13px; }
+
+    .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-4); }
+    .field { display: flex; flex-direction: column; gap: 6px; }
+    .field.full { grid-column: 1 / -1; }
+    .field label, .field legend { font-size: 13px; font-weight: 600; color: #555; }
+    .field input[type=text], .field input[type=password], .field select {
+      padding: 10px 14px; border: 1.5px solid var(--border); border-radius: var(--radius-sm); font: inherit; font-size: 14px; background: var(--surface);
+    }
+    .field .hint { font-size: 12px; color: var(--text-muted); }
+    .field .error { font-size: 12px; color: var(--danger); min-height: 1em; }
+    fieldset.field { border: none; }
+    .checks { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: var(--space-2); }
+    .check { display: flex; align-items: center; gap: var(--space-2); font-size: 14px; padding: var(--space-2) var(--space-3); background: var(--surface-alt); border-radius: var(--radius-sm); cursor: pointer; }
+    .check input { width: 18px; height: 18px; accent-color: var(--brand); }
+    .actions { display: flex; justify-content: flex-end; gap: var(--space-2); margin-top: var(--space-5); flex-wrap: wrap; }
+
+    .app-list { display: flex; flex-direction: column; gap: var(--space-3); }
+    .app { border: 1px solid #e9ecef; border-radius: var(--radius); padding: var(--space-4); background: var(--surface-alt); }
+    .app-head { display: flex; justify-content: space-between; align-items: flex-start; gap: var(--space-3); flex-wrap: wrap; }
+    .app-name { font-weight: 600; color: var(--text-strong); font-size: 15px; }
+    .app-id { font-family: var(--mono); font-size: 12px; color: var(--text-muted); }
+    .badge { display: inline-block; font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 99px; margin-left: var(--space-2); vertical-align: middle; }
+    .badge-on { background: var(--brand-soft); color: #037a34; }
+    .badge-off { background: #eceef1; color: var(--text-muted); }
+    .meta { display: grid; grid-template-columns: 140px 1fr; gap: var(--space-1) var(--space-3); font-size: 13px; margin-top: var(--space-3); }
+    .meta dt { color: var(--text-muted); }
+    .meta dd { word-break: break-all; }
+    .chip { display: inline-block; font-size: 12px; background: var(--surface); border: 1px solid var(--border); border-radius: 99px; padding: 1px 8px; margin: 0 4px 4px 0; }
+    .url-row { display: flex; gap: var(--space-2); align-items: center; }
+    .url-row code { font-family: var(--mono); font-size: 12px; background: var(--surface); border: 1px solid var(--border); border-radius: 6px; padding: 4px 8px; flex: 1; min-width: 0; overflow-wrap: anywhere; }
+    .app-actions { display: flex; gap: var(--space-2); flex-wrap: wrap; margin-top: var(--space-3); }
+    .empty { text-align: center; color: var(--text-muted); font-size: 14px; padding: var(--space-5) 0; }
+
+    .notice { padding: var(--space-3) var(--space-4); border-radius: var(--radius-sm); font-size: 14px; margin-bottom: var(--space-4); }
+    .notice-warn { background: var(--warn-soft); color: var(--warn-text); }
+    .notice-error { background: var(--danger-soft); color: #a3201d; }
+
+    dialog { margin: auto; max-height: calc(100vh - 32px); overflow-y: auto; border: none; border-radius: var(--radius); padding: var(--space-5); width: min(560px, calc(100vw - 32px)); box-shadow: 0 10px 40px rgba(0,0,0,.25); }
+    dialog::backdrop { background: rgba(0,0,0,.4); }
+    dialog h2 { font-size: 17px; margin-bottom: var(--space-3); color: var(--text-strong); }
+    .secret-box { font-family: var(--mono); font-size: 13px; background: #1e1e1e; color: #b5f5c8; padding: var(--space-3); border-radius: var(--radius-sm); word-break: break-all; margin: var(--space-3) 0; }
+
+    #toast { position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%); background: #222; color: #fff; padding: 10px 18px; border-radius: var(--radius-sm); font-size: 14px; opacity: 0; transition: opacity .2s; pointer-events: none; max-width: calc(100vw - 32px); }
+    #toast.show { opacity: 1; }
+    #toast.error { background: var(--danger); }
+    [hidden] { display: none !important; }
+
+    @media (max-width: 640px) {
+      header { padding: var(--space-4); }
+      .form-grid { grid-template-columns: 1fr; }
+      .meta { grid-template-columns: 1fr; }
+      .meta dt { margin-top: var(--space-2); }
+      .card { padding: var(--space-4); }
+    }
+    @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+  </style>
+</head>
+<body>
+<header>
+  <div class="inner">
+    <div>
+      <h1>🔗 Webhook Apps</h1>
+      <p>ลงทะเบียน Application ที่ส่งข้อความเข้า LINE OA</p>
+    </div>
+    <button type="button" class="btn btn-light btn-sm" id="logout-btn" hidden>ออกจากระบบ</button>
+  </div>
+</header>
+
+<main>
+  <!-- Login -->
+  <section class="card" id="login-card" aria-labelledby="login-title">
+    <h2 id="login-title">🔒 เข้าสู่ระบบผู้ดูแล</h2>
+    <form id="login-form" novalidate>
+      <div class="field">
+        <label for="admin-token">Admin Token</label>
+        <input type="password" id="admin-token" autocomplete="current-password" required />
+        <span class="hint">ค่า <code>ADMIN_TOKEN</code> ในไฟล์ .env ของ server</span>
+        <span class="error" id="login-error" role="alert"></span>
+      </div>
+      <div class="actions"><button type="submit" class="btn btn-primary">เข้าสู่ระบบ</button></div>
+    </form>
+  </section>
+
+  <div id="app-area" hidden>
+    <!-- Form -->
+    <section class="card" aria-labelledby="form-title">
+      <h2 id="form-title">➕ เพิ่ม Application</h2>
+      <form id="app-form" novalidate>
+        <div class="form-grid">
+          <div class="field">
+            <label for="f-id">รหัส App (ใช้ใน URL) *</label>
+            <input type="text" id="f-id" placeholder="เช่น ehp-cis, ehp-vetcare" autocomplete="off" />
+            <span class="hint">a-z, 0-9 และ - เท่านั้น · แก้ไขภายหลังไม่ได้</span>
+            <span class="error" id="e-id" role="alert"></span>
+          </div>
+          <div class="field">
+            <label for="f-name">ชื่อที่แสดง</label>
+            <input type="text" id="f-name" placeholder="เช่น EHP CIS — ระบบนัดหมาย" maxlength="100" />
+          </div>
+          <div class="field">
+            <label for="f-auth">วิธียืนยันตัวตน</label>
+            <select id="f-auth">
+              <option value="hmac">HMAC Signature (แนะนำ)</option>
+              <option value="apiKey">API Key (X-Api-Key header)</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="f-target-type">ผู้รับเริ่มต้น (ถ้า payload ไม่ระบุ)</label>
+            <select id="f-target-type">
+              <option value="">ไม่กำหนด — app ต้องส่ง "to" มาเอง</option>
+              <option value="lineGroupId">กลุ่ม LINE (Group ID)</option>
+              <option value="lineUserId">ผู้ใช้ LINE (User ID)</option>
+            </select>
+          </div>
+          <div class="field full" id="target-id-field" hidden>
+            <label for="f-target-id">LINE ID ผู้รับเริ่มต้น</label>
+            <input type="text" id="f-target-id" placeholder="C… หรือ U… ตามด้วยอักษร 32 ตัว" autocomplete="off" />
+            <span class="error" id="e-target" role="alert"></span>
+          </div>
+          <fieldset class="field full">
+            <legend>Event ที่อนุญาตให้ส่ง *</legend>
+            <div class="checks" id="f-events"></div>
+            <span class="error" id="e-events" role="alert"></span>
+          </fieldset>
+          <div class="field full">
+            <label class="check" for="f-enabled"><input type="checkbox" id="f-enabled" checked /> เปิดใช้งาน</label>
+          </div>
+        </div>
+        <div class="actions">
+          <button type="button" class="btn btn-secondary" id="cancel-edit" hidden>ยกเลิกการแก้ไข</button>
+          <button type="submit" class="btn btn-primary" id="submit-btn">💾 บันทึก</button>
+        </div>
+      </form>
+    </section>
+
+    <!-- List -->
+    <section class="card" aria-labelledby="list-title">
+      <div class="toolbar">
+        <h2 id="list-title">📋 Application ที่ลงทะเบียน</h2>
+        <button type="button" class="btn btn-secondary btn-sm" id="reload-btn">↻ โหลดใหม่</button>
+      </div>
+      <div class="app-list" id="app-list" aria-live="polite"></div>
+    </section>
+  </div>
+</main>
+
+<!-- Secret dialog -->
+<dialog id="secret-dialog" aria-labelledby="secret-title">
+  <h2 id="secret-title">🔑 Secret ของ App</h2>
+  <div class="notice notice-warn">แสดงครั้งเดียวเท่านั้น — คัดลอกไปตั้งค่าในระบบต้นทางตอนนี้</div>
+  <p style="font-size:14px">Webhook URL:</p>
+  <div class="secret-box" id="secret-url"></div>
+  <p style="font-size:14px" id="secret-label">Secret:</p>
+  <div class="secret-box" id="secret-value"></div>
+  <div class="actions">
+    <button type="button" class="btn btn-secondary" id="copy-secret">📋 คัดลอก Secret</button>
+    <button type="button" class="btn btn-primary" id="close-secret">คัดลอกแล้ว ปิด</button>
+  </div>
+</dialog>
+
+<!-- Test dialog -->
+<dialog id="test-dialog" aria-labelledby="test-title">
+  <h2 id="test-title">📨 ทดสอบส่งข้อความ</h2>
+  <form id="test-form" novalidate>
+    <div class="field">
+      <label for="t-to">LINE User ID หรือ Group ID</label>
+      <input type="text" id="t-to" placeholder="เว้นว่าง = ใช้ผู้รับเริ่มต้นของ app" autocomplete="off" />
+      <span class="error" id="e-test" role="alert"></span>
+    </div>
+    <div class="actions">
+      <button type="button" class="btn btn-secondary" id="close-test">ปิด</button>
+      <button type="submit" class="btn btn-primary" id="send-test">ส่งทดสอบ</button>
+    </div>
+  </form>
+</dialog>
+
+<div id="toast" role="status" aria-live="polite"></div>
+
+<script>
+(() => {
+  const API = '/admin/api';
+  const TOKEN_KEY = 'ehp-webhook-admin-token';
+  const APP_ID_PATTERN = /^[a-z0-9][a-z0-9-]{1,62}$/;
+  const LINE_ID_PATTERN = /^[UCR][0-9a-f]{32}$/;
+  const EVENT_LABELS = {
+    'appointment.created': 'นัดหมายใหม่',
+    'appointment.updated': 'เปลี่ยนแปลงนัด',
+    'appointment.cancelled': 'ยกเลิกนัด',
+    'notification.text': 'ข้อความทั่วไป',
+    'message.push': 'LINE message แบบกำหนดเอง',
+  };
+  const AUTH_LABELS = { hmac: 'HMAC Signature', apiKey: 'API Key' };
+
+  const $ = (id) => document.getElementById(id);
+  const state = { token: readToken(), events: [], apps: [], editingId: null, testingId: null };
+
+  // ---------- storage (may be unavailable) ----------
+  function readToken() { try { return sessionStorage.getItem(TOKEN_KEY) || ''; } catch { return ''; } }
+  function saveToken(t) { try { t ? sessionStorage.setItem(TOKEN_KEY, t) : sessionStorage.removeItem(TOKEN_KEY); } catch { /* ignore */ } }
+
+  // ---------- helpers ----------
+  function el(tag, props = {}, children = []) {
+    const node = document.createElement(tag);
+    Object.entries(props).forEach(([k, v]) => {
+      if (k === 'class') node.className = v;
+      else if (k === 'text') node.textContent = v;
+      else if (k.startsWith('on')) node.addEventListener(k.slice(2), v);
+      else node.setAttribute(k, v);
+    });
+    children.forEach((c) => node.append(c));
+    return node;
+  }
+
+  let toastTimer;
+  function toast(message, isError = false) {
+    const t = $('toast');
+    t.textContent = message;
+    t.className = `show${isError ? ' error' : ''}`;
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => { t.className = ''; }, 3500);
+  }
+
+  const webhookUrl = (id) => `${location.origin}/webhooks/apps/${id}`;
+
+  async function copy(text) {
+    try { await navigator.clipboard.writeText(text); toast('คัดลอกแล้ว'); }
+    catch { toast('คัดลอกไม่ได้ กรุณาเลือกข้อความแล้วคัดลอกเอง', true); }
+  }
+
+  async function withBusy(button, fn) {
+    button.disabled = true;
+    try { return await fn(); } finally { button.disabled = false; }
+  }
+
+  // ---------- API ----------
+  async function api(method, path, body) {
+    const res = await fetch(`${API}${path}`, {
+      method,
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${state.token}` },
+      body: body === undefined ? undefined : JSON.stringify(body),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (res.status === 401) { logout(); throw new Error('Token ไม่ถูกต้อง กรุณาเข้าสู่ระบบใหม่'); }
+    if (res.status === 503) throw new Error('Server ยังไม่ได้ตั้งค่า ADMIN_TOKEN');
+    if (!res.ok) throw new Error(data.error || `เกิดข้อผิดพลาด (HTTP ${res.status})`);
+    return data;
+  }
+
+  // ---------- auth ----------
+  function showApp(loggedIn) {
+    $('login-card').hidden = loggedIn;
+    $('app-area').hidden = !loggedIn;
+    $('logout-btn').hidden = !loggedIn;
+  }
+
+  function logout() {
+    state.token = '';
+    saveToken('');
+    showApp(false);
+  }
+
+  async function login(token) {
+    state.token = token;
+    state.events = await api('GET', '/events');
+    saveToken(token);
+    showApp(true);
+    renderEventChecks([]);
+    await loadApps();
+  }
+
+  // ---------- form ----------
+  function renderEventChecks(selected) {
+    const box = $('f-events');
+    box.replaceChildren(...state.events.map((name) => {
+      const input = el('input', { type: 'checkbox', value: name, id: `ev-${name}` });
+      input.checked = selected.includes(name);
+      return el('label', { class: 'check', for: `ev-${name}` }, [input, `${EVENT_LABELS[name] || name}`, el('span', { class: 'app-id', text: ` ${name}` })]);
+    }));
+  }
+
+  function toggleTargetField() {
+    $('target-id-field').hidden = !$('f-target-type').value;
+  }
+
+  function clearErrors() { ['e-id', 'e-events', 'e-target'].forEach((id) => { $(id).textContent = ''; }); }
+
+  function readForm() {
+    const targetType = $('f-target-type').value;
+    const targetId = $('f-target-id').value.trim();
+    return {
+      id: $('f-id').value.trim(),
+      name: $('f-name').value.trim(),
+      authType: $('f-auth').value,
+      enabled: $('f-enabled').checked,
+      allowedEvents: [...$('f-events').querySelectorAll('input:checked')].map((i) => i.value),
+      defaultTarget: targetType ? { [targetType]: targetId } : null,
+    };
+  }
+
+  function validateForm(data) {
+    clearErrors();
+    let valid = true;
+    if (!state.editingId && !APP_ID_PATTERN.test(data.id)) { $('e-id').textContent = 'รหัสต้องเป็น a-z, 0-9, - ยาว 2-63 ตัว และขึ้นต้นด้วยตัวอักษรหรือตัวเลข'; valid = false; }
+    if (data.allowedEvents.length === 0) { $('e-events').textContent = 'เลือกอย่างน้อย 1 event'; valid = false; }
+    const targetId = data.defaultTarget && Object.values(data.defaultTarget)[0];
+    if (data.defaultTarget && !LINE_ID_PATTERN.test(targetId)) { $('e-target').textContent = 'LINE ID ต้องขึ้นต้นด้วย U/C/R ตามด้วย a-f, 0-9 จำนวน 32 ตัว'; valid = false; }
+    return valid;
+  }
+
+  function resetForm() {
+    state.editingId = null;
+    $('app-form').reset();
+    $('f-id').disabled = false;
+    $('f-enabled').checked = true;
+    $('form-title').textContent = '➕ เพิ่ม Application';
+    $('cancel-edit').hidden = true;
+    renderEventChecks([]);
+    toggleTargetField();
+    clearErrors();
+  }
+
+  function startEdit(app) {
+    state.editingId = app.id;
+    $('f-id').value = app.id;
+    $('f-id').disabled = true;
+    $('f-name').value = app.name;
+    $('f-auth').value = app.authType;
+    $('f-enabled').checked = app.enabled;
+    const [type, id] = app.defaultTarget ? Object.entries(app.defaultTarget)[0] : ['', ''];
+    $('f-target-type').value = type;
+    $('f-target-id').value = id;
+    renderEventChecks(app.allowedEvents);
+    toggleTargetField();
+    clearErrors();
+    $('form-title').textContent = `✏️ แก้ไข ${app.name}`;
+    $('cancel-edit').hidden = false;
+    $('f-name').focus();
+    $('app-form').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+
+  async function submitForm(event) {
+    event.preventDefault();
+    const data = readForm();
+    if (!validateForm(data)) return;
+    await withBusy($('submit-btn'), async () => {
+      try {
+        if (state.editingId) {
+          const { id, ...changes } = data;
+          await api('PUT', `/apps/${encodeURIComponent(state.editingId)}`, changes);
+          toast('บันทึกการแก้ไขแล้ว');
+        } else {
+          const result = await api('POST', '/apps', data);
+          showSecret(result.app, result.secret);
+        }
+        resetForm();
+        await loadApps();
+      } catch (err) { toast(err.message, true); }
+    });
+  }
+
+  // ---------- list ----------
+  async function loadApps() {
+    try {
+      state.apps = await api('GET', '/apps');
+      renderApps();
+    } catch (err) { toast(err.message, true); }
+  }
+
+  function targetText(target) {
+    if (!target) return '— (app ต้องระบุ "to" เอง)';
+    return target.lineGroupId ? `กลุ่ม ${target.lineGroupId}` : `ผู้ใช้ ${target.lineUserId}`;
+  }
+
+  function renderApp(app) {
+    const status = el('span', { class: `badge ${app.enabled ? 'badge-on' : 'badge-off'}`, text: app.enabled ? 'เปิดใช้งาน' : 'ปิดอยู่' });
+    const events = el('dd', {}, app.allowedEvents.map((e) => el('span', { class: 'chip', title: e, text: EVENT_LABELS[e] || e })));
+    const secretText = app.secretSource === 'env' ? `อ่านจาก ${app.secretHint.slice(4)} ใน .env` : app.secretHint;
+
+    return el('article', { class: 'app', 'aria-label': app.name }, [
+      el('div', { class: 'app-head' }, [
+        el('div', {}, [el('span', { class: 'app-name', text: app.name }), status, el('div', { class: 'app-id', text: app.id })]),
+      ]),
+      el('dl', { class: 'meta' }, [
+        el('dt', { text: 'Webhook URL' }),
+        el('dd', {}, [el('div', { class: 'url-row' }, [
+          el('code', { text: webhookUrl(app.id) }),
+          el('button', { type: 'button', class: 'btn btn-secondary btn-sm', 'aria-label': `คัดลอก URL ของ ${app.name}`, text: '📋', onclick: () => copy(webhookUrl(app.id)) }),
+        ])]),
+        el('dt', { text: 'ยืนยันตัวตน' }), el('dd', { text: `${AUTH_LABELS[app.authType]} · secret ${secretText}` }),
+        el('dt', { text: 'Event ที่อนุญาต' }), events,
+        el('dt', { text: 'ผู้รับเริ่มต้น' }), el('dd', { text: targetText(app.defaultTarget) }),
+      ]),
+      el('div', { class: 'app-actions' }, [
+        el('button', { type: 'button', class: 'btn btn-secondary btn-sm', text: '✏️ แก้ไข', onclick: () => startEdit(app) }),
+        el('button', { type: 'button', class: 'btn btn-secondary btn-sm', text: '📨 ทดสอบส่ง', onclick: () => openTest(app) }),
+        el('button', { type: 'button', class: 'btn btn-secondary btn-sm', text: '🔑 สร้าง Secret ใหม่', onclick: (e) => rotateSecret(app, e.currentTarget) }),
+        el('button', { type: 'button', class: 'btn btn-danger btn-sm', text: '🗑 ลบ', onclick: (e) => removeApp(app, e.currentTarget) }),
+      ]),
+    ]);
+  }
+
+  function renderApps() {
+    const list = $('app-list');
+    if (state.apps.length === 0) {
+      list.replaceChildren(el('p', { class: 'empty', text: 'ยังไม่มี Application — เพิ่มจากฟอร์มด้านบน' }));
+      return;
+    }
+    list.replaceChildren(...state.apps.map(renderApp));
+  }
+
+  async function rotateSecret(app, button) {
+    if (!confirm(`สร้าง Secret ใหม่ให้ "${app.name}"?\n\nSecret เดิมจะใช้ไม่ได้ทันที ระบบต้นทางต้องอัปเดตค่าใหม่ ไม่งั้นจะส่ง webhook ไม่ผ่าน`)) return;
+    await withBusy(button, async () => {
+      try {
+        const result = await api('POST', `/apps/${encodeURIComponent(app.id)}/rotate-secret`);
+        showSecret(result.app, result.secret);
+        await loadApps();
+      } catch (err) { toast(err.message, true); }
+    });
+  }
+
+  async function removeApp(app, button) {
+    if (!confirm(`ลบ "${app.name}" (${app.id})?\n\nระบบต้นทางจะส่ง webhook ไม่ได้อีก (ได้ 404)`)) return;
+    await withBusy(button, async () => {
+      try {
+        await api('DELETE', `/apps/${encodeURIComponent(app.id)}`);
+        if (state.editingId === app.id) resetForm();
+        toast(`ลบ ${app.name} แล้ว`);
+        await loadApps();
+      } catch (err) { toast(err.message, true); }
+    });
+  }
+
+  // ---------- dialogs ----------
+  function showSecret(app, secret) {
+    $('secret-title').textContent = `🔑 Secret ของ ${app.name}`;
+    $('secret-url').textContent = webhookUrl(app.id);
+    $('secret-label').textContent = app.authType === 'apiKey' ? 'API Key (ใส่ใน header X-Api-Key):' : 'HMAC Secret (ใช้เซ็น X-Webhook-Signature):';
+    $('secret-value').textContent = secret;
+    $('secret-dialog').showModal();
+  }
+
+  function openTest(app) {
+    state.testingId = app.id;
+    $('test-title').textContent = `📨 ทดสอบส่งข้อความ — ${app.name}`;
+    $('t-to').value = '';
+    $('e-test').textContent = '';
+    $('test-dialog').showModal();
+    $('t-to').focus();
+  }
+
+  async function submitTest(event) {
+    event.preventDefault();
+    const to = $('t-to').value.trim();
+    $('e-test').textContent = '';
+    if (to && !LINE_ID_PATTERN.test(to)) { $('e-test').textContent = 'LINE ID ไม่ถูกต้อง'; return; }
+    const body = to ? { [to.startsWith('U') ? 'lineUserId' : 'lineGroupId']: to } : {};
+    await withBusy($('send-test'), async () => {
+      try {
+        const result = await api('POST', `/apps/${encodeURIComponent(state.testingId)}/test`, body);
+        $('test-dialog').close();
+        toast(`ส่งสำเร็จไปที่ ${result.sentTo}`);
+      } catch (err) {
+        $('e-test').textContent = err.message === 'missing_recipient' ? 'app นี้ไม่มีผู้รับเริ่มต้น กรุณากรอก LINE ID' : err.message;
+      }
+    });
+  }
+
+  // ---------- wire up ----------
+  $('login-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const token = $('admin-token').value.trim();
+    $('login-error').textContent = '';
+    if (!token) { $('login-error').textContent = 'กรุณากรอก Admin Token'; return; }
+    try { await login(token); $('admin-token').value = ''; }
+    catch (err) { $('login-error').textContent = err.message; }
+  });
+  $('logout-btn').addEventListener('click', logout);
+  $('app-form').addEventListener('submit', submitForm);
+  $('cancel-edit').addEventListener('click', resetForm);
+  $('f-target-type').addEventListener('change', toggleTargetField);
+  $('reload-btn').addEventListener('click', loadApps);
+  $('copy-secret').addEventListener('click', () => copy($('secret-value').textContent));
+  $('close-secret').addEventListener('click', () => $('secret-dialog').close());
+  $('close-test').addEventListener('click', () => $('test-dialog').close());
+  $('test-form').addEventListener('submit', submitTest);
+
+  if (state.token) login(state.token).catch(() => logout());
+  else showApp(false);
+})();
+</script>
+</body>
+</html>

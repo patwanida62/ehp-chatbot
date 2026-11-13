@@ -4,12 +4,14 @@ const express = require('express');
 const crypto = require('crypto');
 const axios = require('axios');
 const { rawJsonBody } = require('./src/middleware/rawJsonBody');
-const { loadAppRegistry } = require('./src/config/appRegistry');
+const { createAppStore } = require('./src/services/appStore');
+const { createAppTester } = require('./src/services/appTester');
 const { createLineClient } = require('./src/services/lineClient');
 const { createEventRegistry } = require('./src/services/events/eventRegistry');
 const { createIdempotencyStore } = require('./src/services/idempotencyStore');
 const { createWebhookService } = require('./src/services/webhookService');
 const { createAppWebhookRouter } = require('./src/routes/appWebhookRouter');
+const { createAdminAppsRouter } = require('./src/routes/adminAppsRouter');
 
 const app = express();
 
@@ -21,6 +23,7 @@ const LINE_CHANNEL_SECRET       = process.env.LINE_CHANNEL_SECRET       || 'YOUR
 const TICKET_API_BASE_URL       = process.env.TICKET_API_BASE_URL       || 'http://localhost:4000'; // URL ของระบบ Ticket
 const PORT                      = process.env.PORT                      || 3000;
 const WEBHOOK_APPS_FILE         = process.env.WEBHOOK_APPS_FILE         || path.join(__dirname, 'apps.json');
+const ADMIN_TOKEN               = process.env.ADMIN_TOKEN               || ''; // ว่าง = ปิดหน้า Admin API
 
 // ============================================================
 // MIDDLEWARE
@@ -33,18 +36,28 @@ app.use(rawJsonBody());
 // ROUTE 0 — Webhook กลางสำหรับหลาย Application
 // POST /webhooks/apps/:appId  (ดู docs/APP-WEBHOOK.md)
 // ============================================================
-const webhookApps = loadAppRegistry(WEBHOOK_APPS_FILE);
+const eventRegistry = createEventRegistry();
+const knownEvents   = [...eventRegistry.keys()];
+const lineClient    = createLineClient({ accessToken: LINE_CHANNEL_ACCESS_TOKEN });
+const appStore      = createAppStore({ filePath: WEBHOOK_APPS_FILE, knownEvents });
+
 app.use(
   createAppWebhookRouter(
-    createWebhookService({
-      apps: webhookApps,
-      eventRegistry: createEventRegistry(),
-      lineClient: createLineClient({ accessToken: LINE_CHANNEL_ACCESS_TOKEN }),
-      idempotencyStore: createIdempotencyStore(),
-    })
+    createWebhookService({ apps: appStore, eventRegistry, lineClient, idempotencyStore: createIdempotencyStore() })
   )
 );
-console.info(`[APP-WEBHOOK] ${webhookApps.size} app(s) registered from ${WEBHOOK_APPS_FILE}`);
+console.info(`[APP-WEBHOOK] ${appStore.size} app(s) registered from ${WEBHOOK_APPS_FILE}`);
+
+// หน้าเว็บจัดการ App: GET /admin/webhooks  (API: /admin/api/*, ต้องมี ADMIN_TOKEN)
+app.use(
+  createAdminAppsRouter({
+    appStore,
+    appTester: createAppTester({ appStore, lineClient }),
+    knownEvents,
+    adminToken: ADMIN_TOKEN,
+  })
+);
+if (!ADMIN_TOKEN) console.warn('[ADMIN] ADMIN_TOKEN is not set — /admin/api is disabled');
 
 // ============================================================
 // DEFAULT MESSAGE TEMPLATES (ใช้เมื่อ settings ไม่มีค่า)
