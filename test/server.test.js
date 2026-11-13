@@ -1,6 +1,9 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const crypto = require('crypto');
+const fs = require('fs');
+const http = require('http');
+const os = require('os');
 const path = require('path');
 const axios = require('axios');
 
@@ -11,6 +14,11 @@ process.env.LINE_CHANNEL_SECRET = LINE_SECRET;
 process.env.LINE_CHANNEL_ACCESS_TOKEN = 'line-token-for-tests';
 process.env.TICKET_API_BASE_URL = TICKET_API;
 process.env.WEBHOOK_APPS_FILE = path.join(__dirname, 'no-such-apps.json');
+const ADMIN_TOKEN = 'server-test-admin-token';
+const forwardsDir = fs.mkdtempSync(path.join(os.tmpdir(), 'server-forwards-'));
+process.env.ADMIN_TOKEN = ADMIN_TOKEN;
+process.env.LINE_FORWARDS_FILE = path.join(forwardsDir, 'line-forwards.json');
+test.after(() => fs.rmSync(forwardsDir, { recursive: true, force: true }));
 
 const { app, buildMessage, matchesKeyword, translateStatus } = require('../server');
 
@@ -429,4 +437,85 @@ test('/notify/ticket-closed returns 500 when LINE push fails', async (t) => {
   const res = await postJson(baseUrl, '/notify/ticket-closed', { ticketId: 42, title: 'x', lineUserId: USER_ID });
 
   assert.equal(res.status, 500);
+});
+
+// ------------------------------------------------------------
+// LINE event forwarding (one OA shared by several systems)
+// ------------------------------------------------------------
+
+async function startDownstream(t) {
+  const received = [];
+  const server = http.createServer((req, res) => {
+    const chunks = [];
+    req.on('data', (c) => chunks.push(c));
+    req.on('end', () => {
+      received.push({ headers: req.headers, body: Buffer.concat(chunks) });
+      res.writeHead(200).end();
+    });
+  });
+  await new Promise((resolve) => server.listen(0, resolve));
+  t.after(() => server.close());
+  return { url: `http://127.0.0.1:${server.address().port}/api/line-oa/webhook/42557`, received };
+}
+
+/** Registers a forward target for the duration of `fn`, removing it afterwards even if `fn` fails. */
+async function withForwardTarget(baseUrl, url, fn) {
+  const auth = { Authorization: `Bearer ${ADMIN_TOKEN}` };
+  const res = await fetch(`${baseUrl}/admin/api/line-forwards`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...auth },
+    body: JSON.stringify({ name: 'EHP CIS', url }),
+  });
+  const { id } = await res.json();
+  try {
+    await fn();
+  } finally {
+    await fetch(`${baseUrl}/admin/api/line-forwards/${id}`, { method: 'DELETE', headers: auth });
+  }
+}
+
+test('/webhook/line forwards the original body and signature to registered systems', async (t) => {
+  silenceLogs(t);
+  t.mock.method(console, 'info', () => {});
+  fakeHttp(t, { [`GET ${TICKET_API}/keywords`]: [] });
+  const baseUrl = await startServer(t);
+  const cis = await startDownstream(t);
+  const rawBody = JSON.stringify({ destination: 'U0', events: [textEvent('สวัสดี')] });
+  const signature = lineSignature(rawBody);
+
+  await withForwardTarget(baseUrl, cis.url, async () => {
+    const res = await fetch(`${baseUrl}/webhook/line`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-line-signature': signature },
+      body: rawBody,
+    });
+    await waitFor(() => cis.received.length === 1);
+
+    assert.equal(res.status, 200);
+    assert.equal(cis.received[0].body.toString(), rawBody);
+    assert.equal(cis.received[0].headers['x-line-signature'], signature);
+  });
+});
+
+test('/webhook/line does not forward requests with an invalid signature or that were already forwarded', async (t) => {
+  silenceLogs(t);
+  t.mock.method(console, 'info', () => {});
+  fakeHttp(t, { [`GET ${TICKET_API}/keywords`]: [] });
+  const baseUrl = await startServer(t);
+  const cis = await startDownstream(t);
+  const rawBody = JSON.stringify({ events: [] });
+
+  await withForwardTarget(baseUrl, cis.url, async () => {
+    const forged = await postLineWebhook(baseUrl, [], 'forged');
+    const looped = await fetch(`${baseUrl}/webhook/line`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-line-signature': lineSignature(rawBody), 'x-ehp-forwarded': '1' },
+      body: rawBody,
+    });
+    await new Promise((resolve) => setTimeout(resolve, 50));
+
+    assert.equal(forged.status, 401);
+    assert.equal(looped.status, 200);
+    assert.equal(cis.received.length, 0);
+  });
 });

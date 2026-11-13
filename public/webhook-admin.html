@@ -93,6 +93,11 @@
     .notice { padding: var(--space-3) var(--space-4); border-radius: var(--radius-sm); font-size: 14px; margin-bottom: var(--space-4); }
     .notice-warn { background: var(--warn-soft); color: var(--warn-text); }
     .notice-error { background: var(--danger-soft); color: #a3201d; }
+    .notice-info { background: var(--brand-soft); color: #035c27; }
+    .notice .small { font-size: 13px; margin-top: var(--space-2); }
+    .spaced { margin-top: var(--space-3); }
+    .result-ok { color: #037a34; }
+    .result-fail { color: var(--danger); }
 
     dialog { margin: auto; max-height: calc(100vh - 32px); overflow-y: auto; border: none; border-radius: var(--radius); padding: var(--space-5); width: min(560px, calc(100vw - 32px)); box-shadow: 0 10px 40px rgba(0,0,0,.25); }
     dialog::backdrop { background: rgba(0,0,0,.4); }
@@ -200,6 +205,37 @@
       </div>
       <div class="app-list" id="app-list" aria-live="polite"></div>
     </section>
+
+    <!-- LINE forwarding -->
+    <section class="card" aria-labelledby="fwd-title">
+      <h2 id="fwd-title">📡 ส่งต่อ LINE Webhook (ใช้ OA เดียวร่วมกันหลายระบบ)</h2>
+      <div class="notice notice-info">
+        <strong>① ใส่ URL นี้ใน LINE Developers Console → Messaging API → Webhook URL</strong>
+        <div class="url-row spaced">
+          <code id="line-webhook-url"></code>
+          <button type="button" class="btn btn-secondary btn-sm" id="copy-line-url" aria-label="คัดลอก URL สำหรับ LINE">📋</button>
+        </div>
+        <p class="small">② เพิ่ม Webhook URL ของแต่ละระบบด้านล่าง — ทุก event จาก LINE จะถูกส่งต่อพร้อมลายเซ็นเดิม<br />
+        ③ ทุกระบบต้องกรอก <strong>Channel Access Token และ Channel Secret ของ OA เดียวกัน</strong> ไม่งั้นระบบปลายทางจะปฏิเสธลายเซ็น</p>
+      </div>
+      <form id="fwd-form" novalidate>
+        <div class="form-grid">
+          <div class="field">
+            <label for="fwd-name">ชื่อระบบ *</label>
+            <input type="text" id="fwd-name" placeholder="เช่น EHP CIS" maxlength="100" autocomplete="off" />
+            <span class="error" id="e-fwd-name" role="alert"></span>
+          </div>
+          <div class="field">
+            <label for="fwd-url">Webhook URL ของระบบ *</label>
+            <input type="text" id="fwd-url" placeholder="https://new-cis.bmscloud.in.th/api/line-oa/webhook/…" autocomplete="off" />
+            <span class="hint">คัดลอกจากหน้าตั้งค่า LINE ของระบบนั้น</span>
+            <span class="error" id="e-fwd-url" role="alert"></span>
+          </div>
+        </div>
+        <div class="actions"><button type="submit" class="btn btn-primary" id="fwd-submit">➕ เพิ่มปลายทาง</button></div>
+      </form>
+      <div class="app-list spaced" id="fwd-list" aria-live="polite"></div>
+    </section>
   </div>
 </main>
 
@@ -251,7 +287,7 @@
   const AUTH_LABELS = { hmac: 'HMAC Signature', apiKey: 'API Key' };
 
   const $ = (id) => document.getElementById(id);
-  const state = { token: readToken(), events: [], apps: [], editingId: null, testingId: null };
+  const state = { token: readToken(), events: [], apps: [], forwards: [], editingId: null, testingId: null };
 
   // ---------- storage (may be unavailable) ----------
   function readToken() { try { return sessionStorage.getItem(TOKEN_KEY) || ''; } catch { return ''; } }
@@ -324,7 +360,8 @@
     saveToken(token);
     showApp(true);
     renderEventChecks([]);
-    await loadApps();
+    $('line-webhook-url').textContent = `${location.origin}/webhook/line`;
+    await Promise.all([loadApps(), loadForwards()]);
   }
 
   // ---------- form ----------
@@ -490,6 +527,102 @@
     });
   }
 
+  // ---------- LINE forwarding ----------
+  async function loadForwards() {
+    try {
+      state.forwards = await api('GET', '/line-forwards');
+      renderForwards();
+    } catch (err) { toast(err.message, true); }
+  }
+
+  function resultText(result) {
+    if (!result) return el('span', { text: 'ยังไม่มีการส่งต่อ' });
+    const when = new Date(result.at).toLocaleString('th-TH');
+    return result.ok
+      ? el('span', { class: 'result-ok', text: `✅ สำเร็จ (HTTP ${result.status}) · ${when}` })
+      : el('span', { class: 'result-fail', text: `❌ ${result.error} · ${when}` });
+  }
+
+  function renderForward(target) {
+    const status = el('span', { class: `badge ${target.enabled ? 'badge-on' : 'badge-off'}`, text: target.enabled ? 'ส่งต่ออยู่' : 'หยุดส่ง' });
+    return el('article', { class: 'app', 'aria-label': target.name }, [
+      el('div', {}, [el('span', { class: 'app-name', text: target.name }), status]),
+      el('dl', { class: 'meta' }, [
+        el('dt', { text: 'ส่งต่อไปที่' }), el('dd', {}, [el('code', { text: target.url })]),
+        el('dt', { text: 'ผลล่าสุด' }), el('dd', {}, [resultText(target.lastResult)]),
+      ]),
+      el('div', { class: 'app-actions' }, [
+        el('button', { type: 'button', class: 'btn btn-secondary btn-sm', text: '📨 ทดสอบ (เหมือน LINE Verify)', onclick: (e) => testForward(target, e.currentTarget) }),
+        el('button', { type: 'button', class: 'btn btn-secondary btn-sm', text: target.enabled ? '⏸ หยุดส่งต่อ' : '▶️ เปิดส่งต่อ', onclick: (e) => toggleForward(target, e.currentTarget) }),
+        el('button', { type: 'button', class: 'btn btn-danger btn-sm', text: '🗑 ลบ', onclick: (e) => removeForward(target, e.currentTarget) }),
+      ]),
+    ]);
+  }
+
+  function renderForwards() {
+    const list = $('fwd-list');
+    if (state.forwards.length === 0) {
+      list.replaceChildren(el('p', { class: 'empty', text: 'ยังไม่มีปลายทาง — event จาก LINE จะถูกใช้โดยระบบนี้เท่านั้น' }));
+      return;
+    }
+    list.replaceChildren(...state.forwards.map(renderForward));
+  }
+
+  function validateForward(name, url) {
+    $('e-fwd-name').textContent = name ? '' : 'กรุณากรอกชื่อระบบ';
+    let urlError = '';
+    try {
+      if (!/^https?:$/.test(new URL(url).protocol)) urlError = 'URL ต้องขึ้นต้นด้วย https://';
+    } catch { urlError = 'กรุณากรอก URL ให้ถูกต้อง'; }
+    $('e-fwd-url').textContent = urlError;
+    return Boolean(name) && !urlError;
+  }
+
+  async function submitForward(event) {
+    event.preventDefault();
+    const name = $('fwd-name').value.trim();
+    const url = $('fwd-url').value.trim();
+    if (!validateForward(name, url)) return;
+    await withBusy($('fwd-submit'), async () => {
+      try {
+        await api('POST', '/line-forwards', { name, url });
+        $('fwd-form').reset();
+        toast(`เพิ่ม ${name} แล้ว — กด "ทดสอบ" เพื่อตรวจการเชื่อมต่อ`);
+        await loadForwards();
+      } catch (err) { toast(err.message, true); }
+    });
+  }
+
+  async function testForward(target, button) {
+    await withBusy(button, async () => {
+      try {
+        const result = await api('POST', `/line-forwards/${encodeURIComponent(target.id)}/test`);
+        toast(result.ok ? `${target.name} ตอบรับ (HTTP ${result.status})` : `${target.name} ไม่ผ่าน: ${result.error}`, !result.ok);
+        await loadForwards();
+      } catch (err) { toast(err.message, true); }
+    });
+  }
+
+  async function toggleForward(target, button) {
+    await withBusy(button, async () => {
+      try {
+        await api('PUT', `/line-forwards/${encodeURIComponent(target.id)}`, { enabled: !target.enabled });
+        await loadForwards();
+      } catch (err) { toast(err.message, true); }
+    });
+  }
+
+  async function removeForward(target, button) {
+    if (!confirm(`ลบปลายทาง "${target.name}"?\n\nระบบนี้จะไม่ได้รับ event จาก LINE อีก (ลูกค้าผูกบัญชี/ตอบกลับไม่ได้)`)) return;
+    await withBusy(button, async () => {
+      try {
+        await api('DELETE', `/line-forwards/${encodeURIComponent(target.id)}`);
+        toast(`ลบ ${target.name} แล้ว`);
+        await loadForwards();
+      } catch (err) { toast(err.message, true); }
+    });
+  }
+
   // ---------- dialogs ----------
   function showSecret(app, secret) {
     $('secret-title').textContent = `🔑 Secret ของ ${app.name}`;
@@ -538,7 +671,9 @@
   $('app-form').addEventListener('submit', submitForm);
   $('cancel-edit').addEventListener('click', resetForm);
   $('f-target-type').addEventListener('change', toggleTargetField);
-  $('reload-btn').addEventListener('click', loadApps);
+  $('reload-btn').addEventListener('click', () => Promise.all([loadApps(), loadForwards()]));
+  $('fwd-form').addEventListener('submit', submitForward);
+  $('copy-line-url').addEventListener('click', () => copy($('line-webhook-url').textContent));
   $('copy-secret').addEventListener('click', () => copy($('secret-value').textContent));
   $('close-secret').addEventListener('click', () => $('secret-dialog').close());
   $('close-test').addEventListener('click', () => $('test-dialog').close());

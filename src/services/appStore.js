@@ -1,22 +1,15 @@
-const fs = require('fs');
 const crypto = require('crypto');
 const { buildAppRegistry } = require('../config/appRegistry');
 const { isValidLineId } = require('./recipientResolver');
+const { ServiceError } = require('./errors');
 const { isPlainObject } = require('../utils/validation');
+const { readJsonArray, writeJsonAtomically } = require('../utils/jsonFile');
 
 const AUTH_TYPES = Object.freeze(['hmac', 'apiKey']);
 const ENV_PREFIX = 'env:';
 const NAME_MAX = 100;
 
-/** Error with an HTTP status, raised for input the admin can fix. */
-class AppStoreError extends Error {
-  constructor(status, message) {
-    super(message);
-    this.status = status;
-  }
-}
-
-const badRequest = (message) => new AppStoreError(400, message);
+const badRequest = (message) => new ServiceError(400, message);
 
 function generateSecret() {
   return crypto.randomBytes(32).toString('hex');
@@ -83,14 +76,8 @@ function applyEditableFields(raw, input, knownEvents) {
  * Exposes `get(id)` so it can be used directly as the webhook service's app registry.
  */
 function createAppStore({ filePath, knownEvents, env = process.env }) {
-  let rawApps = fs.existsSync(filePath) ? JSON.parse(fs.readFileSync(filePath, 'utf8')) : [];
+  let rawApps = readJsonArray(filePath);
   let registry = buildAppRegistry(rawApps, env);
-
-  function writeAtomically(data) {
-    const tmpPath = `${filePath}.tmp`;
-    fs.writeFileSync(tmpPath, `${JSON.stringify(data, null, 2)}\n`);
-    fs.renameSync(tmpPath, filePath);
-  }
 
   /** Validates the whole new list before touching the file, so a bad edit never corrupts it. */
   function commit(nextRawApps) {
@@ -100,14 +87,14 @@ function createAppStore({ filePath, knownEvents, env = process.env }) {
     } catch (err) {
       throw badRequest(err.message);
     }
-    writeAtomically(nextRawApps);
+    writeJsonAtomically(filePath, nextRawApps);
     rawApps = nextRawApps;
     registry = nextRegistry;
   }
 
   function findIndexOrThrow(id) {
     const index = rawApps.findIndex((app) => app.id === id);
-    if (index === -1) throw new AppStoreError(404, `app "${id}" not found`);
+    if (index === -1) throw new ServiceError(404, `app "${id}" not found`);
     return index;
   }
 
@@ -125,7 +112,7 @@ function createAppStore({ filePath, knownEvents, env = process.env }) {
     list: () => rawApps.map(toPublicView),
 
     create(input = {}) {
-      if (rawApps.some((app) => app.id === input.id)) throw new AppStoreError(409, `app "${input.id}" already exists`);
+      if (rawApps.some((app) => app.id === input.id)) throw new ServiceError(409, `app "${input.id}" already exists`);
       const secret = generateSecret();
       const base = { id: input.id, name: input.id, enabled: true, auth: { type: 'hmac', secret }, allowedEvents: [] };
       const raw = applyEditableFields(base, { allowedEvents: [], ...input }, knownEvents);
@@ -152,4 +139,4 @@ function createAppStore({ filePath, knownEvents, env = process.env }) {
   };
 }
 
-module.exports = { createAppStore, AppStoreError };
+module.exports = { createAppStore };

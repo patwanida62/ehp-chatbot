@@ -3,7 +3,8 @@ const assert = require('node:assert/strict');
 const fs = require('fs');
 const os = require('os');
 const path = require('path');
-const { createAppStore, AppStoreError } = require('../src/services/appStore');
+const { createAppStore } = require('../src/services/appStore');
+const { ServiceError } = require('../src/services/errors');
 const { GROUP_ID, USER_ID } = require('./helpers');
 
 const KNOWN_EVENTS = ['appointment.created', 'notification.text'];
@@ -24,7 +25,7 @@ function newStore(t, initialApps, env = {}) {
 }
 
 function assertStoreError(fn, status, pattern) {
-  assert.throws(fn, (err) => err instanceof AppStoreError && err.status === status && pattern.test(err.message));
+  assert.throws(fn, (err) => err instanceof ServiceError && err.status === status && pattern.test(err.message));
 }
 
 test('starts empty when the file does not exist', (t) => {

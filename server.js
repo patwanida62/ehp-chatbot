@@ -1,9 +1,12 @@
 require('dotenv').config();
 const path = require('path');
 const express = require('express');
-const crypto = require('crypto');
 const axios = require('axios');
 const { rawJsonBody } = require('./src/middleware/rawJsonBody');
+const { isValidLineSignature } = require('./src/services/lineSignature');
+const { createForwardTargetStore } = require('./src/services/forwardTargetStore');
+const { createLineEventForwarder, isForwardedRequest } = require('./src/services/lineEventForwarder');
+const { createAdminForwardsRouter } = require('./src/routes/adminForwardsRouter');
 const { createAppStore } = require('./src/services/appStore');
 const { createAppTester } = require('./src/services/appTester');
 const { createLineClient } = require('./src/services/lineClient');
@@ -24,6 +27,7 @@ const TICKET_API_BASE_URL       = process.env.TICKET_API_BASE_URL       || 'http
 const PORT                      = process.env.PORT                      || 3000;
 const WEBHOOK_APPS_FILE         = process.env.WEBHOOK_APPS_FILE         || path.join(__dirname, 'apps.json');
 const ADMIN_TOKEN               = process.env.ADMIN_TOKEN               || ''; // ว่าง = ปิดหน้า Admin API
+const LINE_FORWARDS_FILE        = process.env.LINE_FORWARDS_FILE        || path.join(__dirname, 'line-forwards.json');
 
 // ============================================================
 // MIDDLEWARE
@@ -58,6 +62,18 @@ app.use(
   })
 );
 if (!ADMIN_TOKEN) console.warn('[ADMIN] ADMIN_TOKEN is not set — /admin/api is disabled');
+
+// ส่งต่อ LINE event ไปยังระบบอื่นที่ใช้ OA เดียวกัน (EHP CIS, EHP Vetcare ...)
+// จัดการปลายทางได้ที่หน้า /admin/webhooks  (API: /admin/api/line-forwards)
+const forwardTargetStore = createForwardTargetStore({ filePath: LINE_FORWARDS_FILE });
+const lineEventForwarder = createLineEventForwarder({
+  targetStore: forwardTargetStore,
+  channelSecret: LINE_CHANNEL_SECRET,
+});
+app.use(
+  createAdminForwardsRouter({ targetStore: forwardTargetStore, forwarder: lineEventForwarder, adminToken: ADMIN_TOKEN })
+);
+console.info(`[LINE-FORWARD] ${forwardTargetStore.enabled().length} active forward target(s)`);
 
 // ============================================================
 // DEFAULT MESSAGE TEMPLATES (ใช้เมื่อ settings ไม่มีค่า)
@@ -100,13 +116,7 @@ function matchesKeyword(text, kw) {
 // HELPER — Verify Line Signature
 // ============================================================
 function verifyLineSignature(req) {
-  const signature = req.headers['x-line-signature'];
-  if (!signature) return false;
-  const hash = crypto
-    .createHmac('SHA256', LINE_CHANNEL_SECRET)
-    .update(req.rawBody)
-    .digest('base64');
-  return hash === signature;
+  return isValidLineSignature(LINE_CHANNEL_SECRET, req.rawBody, req.headers['x-line-signature']);
 }
 
 // ============================================================
@@ -175,6 +185,11 @@ app.post('/webhook/line', async (req, res) => {
 
   // Line ต้องการ 200 OK เร็วๆ ก่อนเสมอ
   res.status(200).end();
+
+  // ส่งต่อ request เดิม (body + ลายเซ็นเดิม) ให้ระบบอื่นที่ใช้ OA เดียวกัน — ไม่รอผล
+  if (!isForwardedRequest(req.headers)) {
+    lineEventForwarder.forward(req.rawBody, req.headers['x-line-signature']);
+  }
 
   const events = req.body.events || [];
 
