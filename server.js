@@ -1,7 +1,15 @@
 require('dotenv').config();
+const path = require('path');
 const express = require('express');
 const crypto = require('crypto');
 const axios = require('axios');
+const { rawJsonBody } = require('./src/middleware/rawJsonBody');
+const { loadAppRegistry } = require('./src/config/appRegistry');
+const { createLineClient } = require('./src/services/lineClient');
+const { createEventRegistry } = require('./src/services/events/eventRegistry');
+const { createIdempotencyStore } = require('./src/services/idempotencyStore');
+const { createWebhookService } = require('./src/services/webhookService');
+const { createAppWebhookRouter } = require('./src/routes/appWebhookRouter');
 
 const app = express();
 
@@ -12,19 +20,31 @@ const LINE_CHANNEL_ACCESS_TOKEN = process.env.LINE_CHANNEL_ACCESS_TOKEN || 'YOUR
 const LINE_CHANNEL_SECRET       = process.env.LINE_CHANNEL_SECRET       || 'YOUR_SECRET_HERE';
 const TICKET_API_BASE_URL       = process.env.TICKET_API_BASE_URL       || 'http://localhost:4000'; // URL ของระบบ Ticket
 const PORT                      = process.env.PORT                      || 3000;
+const WEBHOOK_APPS_FILE         = process.env.WEBHOOK_APPS_FILE         || path.join(__dirname, 'apps.json');
 
 // ============================================================
 // MIDDLEWARE
 // ============================================================
 
-// ต้องใช้ raw body สำหรับ verify signature ของ Line
+// ต้องใช้ raw body สำหรับ verify signature ของ Line และของ App webhooks
+app.use(rawJsonBody());
+
+// ============================================================
+// ROUTE 0 — Webhook กลางสำหรับหลาย Application
+// POST /webhooks/apps/:appId  (ดู docs/APP-WEBHOOK.md)
+// ============================================================
+const webhookApps = loadAppRegistry(WEBHOOK_APPS_FILE);
 app.use(
-  express.json({
-    verify: (req, _res, buf) => {
-      req.rawBody = buf;
-    },
-  })
+  createAppWebhookRouter(
+    createWebhookService({
+      apps: webhookApps,
+      eventRegistry: createEventRegistry(),
+      lineClient: createLineClient({ accessToken: LINE_CHANNEL_ACCESS_TOKEN }),
+      idempotencyStore: createIdempotencyStore(),
+    })
+  )
 );
+console.info(`[APP-WEBHOOK] ${webhookApps.size} app(s) registered from ${WEBHOOK_APPS_FILE}`);
 
 // ============================================================
 // DEFAULT MESSAGE TEMPLATES (ใช้เมื่อ settings ไม่มีค่า)

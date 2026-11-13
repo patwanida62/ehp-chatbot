@@ -1,0 +1,20 @@
+[
+  {
+    "id": "ehp-cis",
+    "name": "EHP CIS — ระบบนัดหมาย",
+    "auth": { "type": "hmac", "secret": "env:EHP_CIS_WEBHOOK_SECRET" },
+    "allowedEvents": [
+      "appointment.created",
+      "appointment.updated",
+      "appointment.cancelled",
+      "notification.text"
+    ]
+  },
+  {
+    "id": "lab-system",
+    "name": "ระบบแล็บ (ส่งแจ้งเตือนเข้ากลุ่มเจ้าหน้าที่)",
+    "auth": { "type": "apiKey", "secret": "env:LAB_WEBHOOK_API_KEY" },
+    "allowedEvents": ["notification.text", "message.push"],
+    "defaultTarget": { "lineGroupId": "C00000000000000000000000000000000" }
+  }
+]

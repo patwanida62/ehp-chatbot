@@ -1,0 +1,13 @@
+{
+  "event": "appointment.created",
+  "eventId": "APT-2026-000123-created",
+  "to": { "lineUserId": "Uxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx" },
+  "data": {
+    "appointmentId": "APT-2026-000123",
+    "datetime": "2026-11-20T09:30:00+07:00",
+    "clinic": "คลินิกเบาหวาน",
+    "doctor": "นพ.สมชาย ใจดี",
+    "location": "อาคาร OPD ชั้น 2",
+    "note": "งดน้ำงดอาหารหลังเที่ยงคืน"
+  }
+}
