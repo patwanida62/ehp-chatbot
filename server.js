@@ -376,8 +376,12 @@ function translateStatus(status) {
 }
 
 // ============================================================
-// START SERVER
+// START SERVER — เฉพาะตอนรันตรง (`node server.js`) เพื่อให้ test require ไฟล์นี้ได้
 // ============================================================
-app.listen(PORT, () => {
-  console.log(`Webhook server running on port ${PORT}`);
-});
+if (require.main === module) {
+  app.listen(PORT, () => {
+    console.log(`Webhook server running on port ${PORT}`);
+  });
+}
+
+module.exports = { app, buildMessage, matchesKeyword, translateStatus };
