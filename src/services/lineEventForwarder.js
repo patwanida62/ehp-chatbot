@@ -50,9 +50,36 @@ function createLineEventForwarder({
     return { targetId: target.id, ...outcome };
   }
 
-  /** Forwards one LINE request to every enabled target in parallel. */
+  /**
+   * What a target should receive: the original request untouched when nothing is withheld,
+   * a re-signed copy without chat messages when some are, or null when nothing is left for it.
+   */
+  function payloadFor(target, original, parsed) {
+    if (target.receiveMessages !== false || !parsed || !Array.isArray(parsed.events)) return original;
+    const events = parsed.events.filter((event) => event.type !== 'message');
+    if (events.length === parsed.events.length) return original;
+    if (events.length === 0) return null;
+    const rawBody = Buffer.from(JSON.stringify({ ...parsed, events }));
+    return { rawBody, signature: computeLineSignature(channelSecret, rawBody) };
+  }
+
+  function parseBody(rawBody) {
+    try {
+      return JSON.parse(rawBody.toString('utf8'));
+    } catch {
+      return null;
+    }
+  }
+
+  /** Forwards one LINE request to every enabled target in parallel (targets left with no events are skipped). */
   function forward(rawBody, signature) {
-    return Promise.all(targetStore.enabled().map((t) => deliver(t, rawBody, signature)));
+    const original = { rawBody, signature };
+    const parsed = parseBody(rawBody);
+    const deliveries = targetStore.enabled()
+      .map((target) => ({ target, payload: payloadFor(target, original, parsed) }))
+      .filter(({ payload }) => payload !== null)
+      .map(({ target, payload }) => deliver(target, payload.rawBody, payload.signature));
+    return Promise.all(deliveries);
   }
 
   /** Sends a signed empty event list — what LINE's own "Verify" button sends. */

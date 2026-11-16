@@ -73,6 +73,19 @@ test('loads and validates targets saved in the file', (t) => {
 
   const store = createForwardTargetStore({ filePath });
 
-  assert.deepEqual(store.list(), [{ id: 'abc12345', name: 'CIS', url: CIS_URL, enabled: false }]);
+  assert.deepEqual(store.list(), [{ id: 'abc12345', name: 'CIS', url: CIS_URL, enabled: false, receiveMessages: true }]);
   assert.throws(() => createForwardTargetStore({ filePath: tempFile(t, [{ id: 'x', name: 'bad', url: 'nope' }]) }), /not a valid URL/);
+});
+
+test('receiveMessages defaults to true, can be set on create or update, and is validated', (t) => {
+  const store = createForwardTargetStore({ filePath: tempFile(t) });
+
+  const support = store.create({ name: 'Support', url: 'https://support.example/hook' });
+  const cis = store.create({ name: 'CIS', url: CIS_URL, receiveMessages: false });
+  const updated = store.update(support.id, { receiveMessages: false });
+
+  assert.equal(support.receiveMessages, true);
+  assert.equal(cis.receiveMessages, false);
+  assert.equal(updated.receiveMessages, false);
+  assertServiceError(() => store.update(cis.id, { receiveMessages: 'yes' }), 400, /receiveMessages/);
 });

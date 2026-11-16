@@ -129,3 +129,72 @@ test('isValidLineSignature rejects missing or wrong signatures', () => {
   assert.equal(isValidLineSignature(CHANNEL_SECRET, body, 'wrong'), false);
   assert.equal(isValidLineSignature(CHANNEL_SECRET, body, computeLineSignature(CHANNEL_SECRET, body)), true);
 });
+
+// ------------------------------------------------------------
+// Chat-message filtering (receiveMessages: false)
+// ------------------------------------------------------------
+
+const messageEvent = { type: 'message', replyToken: 'r1', source: { type: 'user', userId: 'U1' }, message: { type: 'text', text: 'ผูก LINE' } };
+const followEvent = { type: 'follow', replyToken: 'r2', source: { type: 'user', userId: 'U1' } };
+const postbackEvent = { type: 'postback', replyToken: 'r3', source: { type: 'user', userId: 'U1' }, postback: { data: 'a=1' } };
+
+function lineRequest(events) {
+  const rawBody = Buffer.from(JSON.stringify({ destination: 'U0', events }));
+  return { rawBody, signature: computeLineSignature(CHANNEL_SECRET, rawBody) };
+}
+
+async function startPair(t) {
+  const support = await startDownstream(t);
+  const cis = await startDownstream(t);
+  const forwarder = makeForwarder([
+    { id: 'support', name: 'Support', url: support.url, enabled: true, receiveMessages: true },
+    { id: 'cis', name: 'CIS', url: cis.url, enabled: true, receiveMessages: false },
+  ]);
+  return { support, cis, forwarder };
+}
+
+test('a target with receiveMessages=false gets the other events, re-signed so verification still passes', async (t) => {
+  const { support, cis, forwarder } = await startPair(t);
+  const { rawBody, signature } = lineRequest([messageEvent, followEvent, postbackEvent]);
+
+  await forwarder.forward(rawBody, signature);
+
+  assert.ok(support.received[0].body.equals(rawBody), 'chat handler gets the original bytes');
+  const cisBody = JSON.parse(cis.received[0].body);
+  assert.deepEqual(cisBody.events.map((e) => e.type), ['follow', 'postback']);
+  assert.equal(cisBody.destination, 'U0');
+  assert.ok(isValidLineSignature(CHANNEL_SECRET, cis.received[0].body, cis.received[0].headers['x-line-signature']));
+});
+
+test('a target is skipped entirely when only chat messages arrive', async (t) => {
+  const { support, cis, forwarder } = await startPair(t);
+  const { rawBody, signature } = lineRequest([messageEvent]);
+
+  const results = await forwarder.forward(rawBody, signature);
+
+  assert.deepEqual(results.map((r) => r.targetId), ['support']);
+  assert.equal(support.received.length, 1);
+  assert.equal(cis.received.length, 0);
+  assert.equal(forwarder.describeTargets()[1].lastResult, null, 'skips are not recorded as deliveries');
+});
+
+test('requests without chat messages (and LINE Verify) reach filtered targets unchanged', async (t) => {
+  const { cis, forwarder } = await startPair(t);
+  const follow = lineRequest([followEvent]);
+  const verify = lineRequest([]);
+
+  await forwarder.forward(follow.rawBody, follow.signature);
+  await forwarder.forward(verify.rawBody, verify.signature);
+
+  assert.ok(cis.received[0].body.equals(follow.rawBody));
+  assert.equal(cis.received[0].headers['x-line-signature'], follow.signature);
+  assert.ok(cis.received[1].body.equals(verify.rawBody));
+});
+
+test('an unparseable body is passed through untouched rather than dropped', async (t) => {
+  const { cis, forwarder } = await startPair(t);
+
+  await forwarder.forward(Buffer.from('not json'), 'sig');
+
+  assert.equal(cis.received[0].body.toString(), 'not json');
+});

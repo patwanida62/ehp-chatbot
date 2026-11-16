@@ -545,15 +545,23 @@
 
   function renderForward(target) {
     const status = el('span', { class: `badge ${target.enabled ? 'badge-on' : 'badge-off'}`, text: target.enabled ? 'ส่งต่ออยู่' : 'หยุดส่ง' });
+    const chat = target.receiveMessages
+      ? el('span', { class: 'badge badge-on', text: '💬 รับข้อความแชท' })
+      : el('span', { class: 'badge badge-off', text: '🔕 ไม่รับข้อความแชท' });
+    const chatHelp = target.receiveMessages
+      ? 'ได้รับทุก event รวมข้อความที่ลูกค้าพิมพ์ — ระบบนี้ตอบแชทได้'
+      : 'ได้รับเฉพาะแอดเพื่อน/บล็อก/กดปุ่ม postback/ผูกบัญชี — ไม่ได้รับข้อความที่ลูกค้าพิมพ์ จึงไม่ตอบแชท';
     return el('article', { class: 'app', 'aria-label': target.name }, [
-      el('div', {}, [el('span', { class: 'app-name', text: target.name }), status]),
+      el('div', {}, [el('span', { class: 'app-name', text: target.name }), status, chat]),
       el('dl', { class: 'meta' }, [
         el('dt', { text: 'ส่งต่อไปที่' }), el('dd', {}, [el('code', { text: target.url })]),
+        el('dt', { text: 'ข้อความแชท' }), el('dd', { text: chatHelp }),
         el('dt', { text: 'ผลล่าสุด' }), el('dd', {}, [resultText(target.lastResult)]),
       ]),
       el('div', { class: 'app-actions' }, [
         el('button', { type: 'button', class: 'btn btn-secondary btn-sm', text: '📨 ทดสอบ (เหมือน LINE Verify)', onclick: (e) => testForward(target, e.currentTarget) }),
-        el('button', { type: 'button', class: 'btn btn-secondary btn-sm', text: target.enabled ? '⏸ หยุดส่งต่อ' : '▶️ เปิดส่งต่อ', onclick: (e) => toggleForward(target, e.currentTarget) }),
+        el('button', { type: 'button', class: 'btn btn-secondary btn-sm', text: target.receiveMessages ? '🔕 หยุดรับข้อความแชท' : '💬 ให้รับข้อความแชท', onclick: (e) => updateForward(target, { receiveMessages: !target.receiveMessages }, e.currentTarget) }),
+        el('button', { type: 'button', class: 'btn btn-secondary btn-sm', text: target.enabled ? '⏸ หยุดส่งต่อ' : '▶️ เปิดส่งต่อ', onclick: (e) => updateForward(target, { enabled: !target.enabled }, e.currentTarget) }),
         el('button', { type: 'button', class: 'btn btn-danger btn-sm', text: '🗑 ลบ', onclick: (e) => removeForward(target, e.currentTarget) }),
       ]),
     ]);
@@ -603,10 +611,11 @@
     });
   }
 
-  async function toggleForward(target, button) {
+  async function updateForward(target, changes, button) {
     await withBusy(button, async () => {
       try {
-        await api('PUT', `/line-forwards/${encodeURIComponent(target.id)}`, { enabled: !target.enabled });
+        await api('PUT', `/line-forwards/${encodeURIComponent(target.id)}`, changes);
+        toast(`บันทึก ${target.name} แล้ว`);
         await loadForwards();
       } catch (err) { toast(err.message, true); }
     });

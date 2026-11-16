@@ -56,7 +56,7 @@ test('create → list → update → test → delete', async (t) => {
   const { id } = created.body;
 
   const listed = await call('GET', '');
-  assert.deepEqual(listed.body, [{ id, name: 'EHP CIS', url: `${downstreamUrl}/hook`, enabled: true, lastResult: null }]);
+  assert.deepEqual(listed.body, [{ id, name: 'EHP CIS', url: `${downstreamUrl}/hook`, enabled: true, receiveMessages: true, lastResult: null }]);
 
   const updated = await call('PUT', `/${id}`, { enabled: false });
   assert.equal(updated.body.enabled, false);
